@@ -1,0 +1,62 @@
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* Emoji picker styles */
+#emoji-picker {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#emoji-picker::-webkit-scrollbar {
+  width: 6px;
+}
+
+#emoji-picker::-webkit-scrollbar-track {
+  background: #2a3942;
+}
+
+#emoji-picker::-webkit-scrollbar-thumb {
+  background: #3b4a54;
+  border-radius: 3px;
+}
+
+#emoji-picker::-webkit-scrollbar-thumb:hover {
+  background: #4a5a64;
+}
+
+.emoji-btn:hover {
+  transform: scale(1.1);
+}
+
+.emoji-category-tab {
+  transition: all 0.2s ease;
+}
+
+.emoji-category-tab:hover {
+  background-color: #2a3942;
+}
+
+/* Animation for emoji picker */
+#emoji-picker {
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

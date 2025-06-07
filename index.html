@@ -1,181 +1,157 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <title>Interface de Messagerie</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module" src="./src/main.js"></script>
-</head>
-<body class="bg-gray-100 h-screen">
-    <div class="flex h-full max-w-7xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
-
-        <div class="flex flex-col gap-4 w-[90px] h-full justify-center items-center bg-[#efe7d7]">
-            <div id="messagesBtn" class="flex flex-col w-[70px] h-[70px] justify-center items-center border-amber border-2 border-orange-300 bg-yellow-600 rounded-2xl cursor-pointer">
-                <i class="bx bxs-message-reply bx-flip-horizontal"></i> 
-                <span class="text-[12px] font-medium text-white">Messages</span>
-            </div>
-            <div id="groupsBtn" class="flex flex-col w-[70px] h-[70px] justify-center items-center border-amber border-2 border-orange-300 rounded-2xl cursor-pointer">
-                <i class='bx bxs-group bx-flip-horizontal'></i> 
-                <span class="text-xs font-medium text-gray-600">Groupes</span>
-            </div>
-            <div id="broadcastBtn" class="flex flex-col w-[70px] h-[70px] justify-center items-center border-amber border-2 border-orange-300 rounded-2xl cursor-pointer">
-                <i class="fa-solid fa-arrows-turn-to-dots"></i>
-                <span class="text-xs font-medium text-gray-600">Diffusions</span>
-            </div>
-            <div id="archiveBtn" class="flex flex-col w-[70px] h-[70px] justify-center items-center border-amber border-2 border-orange-300 rounded-2xl cursor-pointer">
-                <i class='bx bxs-archive-alt bx-flip-horizontal'></i> 
-                <span class="text-xs font-medium text-gray-600">Archives</span>
-            </div>
-            <div id="newContactBtn" class="flex flex-col w-[70px] h-[70px] justify-center items-center border-amber border-2 border-orange-300 rounded-2xl cursor-pointer">
-                <i class='bx bxs-plus bx-flip-horizontal'></i> 
-                <span class="text-xs font-medium text-gray-600">Nouveau</span>
-            </div>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/whatsapp-icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp</title>
+  </head>
+  <body class="bg-[#111b21] text-gray-200 overflow-hidden">
+    <div id="app" class="h-screen flex">
+      <!-- Side navigation bar -->
+      <div id="side-nav" class="w-[70px] bg-[#202c33] flex flex-col items-center py-4 border-r border-gray-700">
+        <!-- Chat icon with notification badge -->
+        <div class="relative mb-8">
+          <button id="chats-btn" class="w-12 h-12 bg-[#00a884] rounded-full flex items-center justify-center text-white hover:bg-[#00916a] transition-colors">
+            <div class="w-6 h-6"></div>
+          </button>
+          <div class="absolute -top-1 -right-1 bg-[#00a884] text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+            37
+          </div>
         </div>
 
-
-        <div class="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
-            
-            <div class="p-4 border-b border-gray-200">
-                <h2 id="panelTitle" class="text-xl font-semibold text-gray-800">Discussions</h2>
-            </div>
-
-            <div class="p-4 border-b border-gray-200">
-                <div class="relative">
-                    <input type="text" 
-                           class="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm outline-none focus:border-orange-400" 
-                           placeholder="Rechercher...">
-                    <i class='bx bx-search absolute left-3 top-2.5 text-gray-400'></i>
-                </div>
-            </div>
-
-            <div id="addContactForm" class="hidden p-4 border-b border-gray-200 bg-blue-50">
-                <h3 class="text-sm font-semibold mb-3 text-black-800">Ajouter un contact</h3>
-                <div class="space-y-3">
-                    <input type="text" 
-                           id="contactName"
-                           class="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm outline-none focus:border-blue-500" 
-                           placeholder="Nom du contact">
-                    <input type="tel" 
-                           id="contactPhone"
-                           pattern="^(7[0578])[0-9]{7}$"
-                           maxlength="9"
-                           class="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm outline-none focus:border-blue-500" 
-                           placeholder="Numéro de téléphone (77/78/76/70/75)"
-                           oninput="validatePhoneNumber(this)">
-                    <div id="phoneError" class="text-red-500 text-xs hidden mt-1"></div>
-                    <div class="flex gap-2">
-                        <button onclick="addNewContact()" 
-                                class="flex-1 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-white-600 text-sm">
-                            Ajouter
-                        </button>
-                        <button onclick="cancelAddContact()" 
-                                class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">
-                            Annuler
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="contactsList" class="flex-1 overflow-y-auto">
-            </div>
-
-            <div id="groupsList" class="hidden flex-1 overflow-y-auto">
-                <div class="p-4 border-b border-gray-200">
-                    <button id="createGroupBtn" 
-                            class="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg flex items-center justify-center gap-2">
-                        <i class='bx bxs-plus-circle'></i>
-                        <span>Créer un groupe</span>
-                    </button>
-                </div>
-            </div>
-
-            <div id="broadcastList" class="hidden flex-1 overflow-y-auto">
-                
-                <div class="flex-1 overflow-y-auto" id="broadcastContactsList">
-                </div>
-                <div class="p-4 border-t border-gray-200 bg-green-50">
-                   
-                </div>
-            </div>
-
-            <div id="archivedList" class="hidden flex-1 overflow-y-auto">
-            </div>
+        <!-- Status icon with green dot -->
+        <div class="relative mb-8">
+          <button id="status-btn" class="w-12 h-12 rounded-full bg-[#2a3942] flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+            <div class="w-6 h-6"></div>
+          </button>
+          <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#202c33]"></div>
         </div>
 
-        <div class="flex-1 bg-gray-100 flex flex-col">
-            <div class="bg-[#efe7d7] p-4 border-b-2 border-b-white flex items-center gap-3">
-                <div class="w-10 h-10 bg-gray-400 rounded-full"></div>
-                <div class="font-semibold text-gray-800">Toto</div>
-                <div class="ml-auto flex items-center gap-2">
-                    <button class="w-9 h-9 border-amber border-2 border-orange-300 rounded-full flex items-center justify-center text-white  transition-colors">
-                        <i class='bx  bxs-backspace bx-flip-vertical'  style='color:#ff7b00'></i> 
-                    </button>
-                   <button onclick="if(MessageManager.activeContact) ArchiveManager.archiveContact(MessageManager.activeContact)" 
-                            id="headerArchiveBtn"
-                            class="w-9 h-9 border-amber  border-2 border-gray-800 rounded-full flex items-center justify-center text-white transition-colors">
-                            <i class='bx bxs-archive-alt bx-flip-horizontal' style='color:#5a5a5a'></i> 
-                    </button>
-                    <button class="w-9 h-9 border-amber border-2 border-black rounded-full flex items-center justify-center text-white transition-colors">
-                        <i class='bx  bxs-square'  style='color:#000000'></i> 
-                    </button>
-                    <button class="w-9 h-9 border-amber border-2 border-red-300 rounded-full flex items-center justify-center text-white transition-colors">
-                        <i class='bx  bxs-trash-alt'  style='color:#ff4040'></i> 
-                    </button>
-                </div>
-            </div>
-
-            <div id="Discuter" class="bg-[#efeae2] flex-1 p-4 flex flex-col overflow-y-auto">
-              
-            </div>
-
-            <div class="bg-white p-5 border-t border-gray-200 flex items-center gap-4 opacity-50 pointer-events-none">
-                <input type="text" 
-                       class="flex-1 px-5 py-3 bg-gray-50 border border-gray-300 rounded-full text-sm outline-none focus:border-blue-400" 
-                       placeholder="Tapez votre message...">
-                <button class="w-11 h-11 bg-green-500 rounded-full flex items-center justify-center text-white hover:bg-green-600 transition-colors">
-                  <i class='bx  bxs-arrow-right-stroke bx-flip-vertical'  style='color:#ffffff'></i> 
-                </button>
-            </div>
+        <!-- Channels icon -->
+        <div class="mb-8">
+          <button id="channels-btn" class="w-12 h-12 rounded-full bg-[#2a3942] flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+            <div class="w-6 h-6"></div>
+          </button>
         </div>
+
+        <!-- Communities icon with green dot -->
+        <div class="relative mb-8">
+          <button id="communities-btn" class="w-12 h-12 rounded-full bg-[#2a3942] flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+            <div class="w-6 h-6"></div>
+          </button>
+          <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#202c33]"></div>
+        </div>
+
+        <!-- Spacer to push bottom items down -->
+        <div class="flex-1"></div>
+
+        <!-- Settings icon -->
+        <div class="mb-4">
+          <button id="settings-btn" class="w-12 h-12 rounded-full bg-[#2a3942] flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+            <div class="w-6 h-6"></div>
+          </button>
+        </div>
+
+        <!-- Profile icon -->
+        <div class="w-12 h-12 rounded-full bg-gray-500 overflow-hidden cursor-pointer">
+          <img id="current-user-avatar" src="" alt="Profile" class="w-full h-full object-cover" />
+        </div>
+      </div>
+
+      <!-- Chat list -->
+      <div id="chat-list-container" class="w-[380px] border-r border-gray-700 flex flex-col">
+        <div id="chat-list-header" class="p-2 bg-[#202c33] flex justify-between items-center">
+          <h1 class="text-xl font-medium px-4 py-3">Discussions</h1>
+          <div class="flex gap-5 pr-4">
+            <button id="new-chat-btn" class="text-gray-400 hover:text-white">
+              <div class="w-5 h-5"></div>
+            </button>
+            <button id="menu-btn" class="text-gray-400 hover:text-white">
+              <div class="w-5 h-5"></div>
+            </button>
+          </div>
+        </div>
+        <div id="search-container" class="p-2 bg-[#111b21]">
+          <div class="flex items-center bg-[#202c33] rounded-lg px-3 py-1">
+            <span class="text-gray-400 mr-3">
+              <div class="w-5 h-5"></div>
+            </span>
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Rechercher ou démarrer une discussion"
+              class="bg-transparent border-none outline-none text-white w-full py-2"
+            />
+          </div>
+        </div>
+        <div id="chat-list" class="flex-1 overflow-y-auto"></div>
+      </div>
+
+      <!-- Chat content -->
+      <div id="chat-content" class="flex-1 flex flex-col">
+        <div id="chat-header" class="p-2 bg-[#202c33] flex justify-between items-center hidden">
+          <div class="flex items-center gap-3 px-4">
+            <div class="w-10 h-10 rounded-full bg-gray-500 overflow-hidden">
+              <img id="active-chat-avatar" src="" alt="Contact" class="w-full h-full object-cover" />
+            </div>
+            <div>
+              <h2 id="active-chat-name" class="font-medium"></h2>
+              <p id="active-chat-status" class="text-sm text-gray-400"></p>
+            </div>
+          </div>
+          <div class="flex gap-5 pr-4">
+            <button id="search-chat-btn" class="text-gray-400 hover:text-white">
+              <div class="w-5 h-5"></div>
+            </button>
+            <button id="chat-menu-btn" class="text-gray-400 hover:text-white">
+              <div class="w-5 h-5"></div>
+            </button>
+          </div>
+        </div>
+
+        <div id="messages-container" class="flex-1 overflow-y-auto p-5 bg-[#0b141a] bg-opacity-90 hidden">
+          <div id="messages-list" class="max-w-3xl mx-auto"></div>
+        </div>
+
+        <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center bg-[#222e35]">
+          <div class="w-72 h-72 rounded-full bg-[#364147] flex items-center justify-center mb-8">
+            <div class="w-56 h-56 text-gray-500"></div>
+          </div>
+          <h1 class="text-3xl text-white font-light mb-3">WhatsApp pour Windows</h1>
+          <p class="text-gray-400 text-center max-w-md">
+            Envoyez et recevez des messages sans avoir à garder votre téléphone connecté.
+            <br />Utilisez WhatsApp sur un maximum de 4 appareils et 1 téléphone, simultanément.
+          </p>
+          <div class="mt-8 text-gray-400 text-sm flex items-center">
+            <span class="mr-2">
+              <div class="w-4 h-4"></div>
+            </span>
+            <span>Chiffrée de bout en bout</span>
+          </div>
+        </div>
+
+        <div id="message-input-container" class="p-3 bg-[#202c33] flex items-center gap-4 hidden">
+          <button id="emoji-btn" class="text-gray-400 hover:text-white">
+            <div class="w-6 h-6"></div>
+          </button>
+          <button id="attach-btn" class="text-gray-400 hover:text-white">
+            <div class="w-6 h-6"></div>
+          </button>
+          <div class="flex-1">
+            <input
+              type="text"
+              id="message-input"
+              placeholder="Tapez un message"
+              class="w-full bg-[#2a3942] text-white rounded-lg px-4 py-3 outline-none"
+            />
+          </div>
+          <button id="voice-btn" class="text-gray-400 hover:text-white">
+            <div class="w-6 h-6"></div>
+          </button>
+        </div>
+      </div>
     </div>
-
-    <div id="newGroupModal" class=" hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-xl w-96">
-            <h3 class="text-xl font-semibold mb-4">Créer un groupe</h3>
-            <input type="text" 
-                   id="groupName"
-                   class="w-full px-4 py-2 mb-4 bg-white border border-gray-300 rounded-lg text-sm outline-none focus:border-orange-400" 
-                   placeholder="Nom du groupe">
-            <div class="max-h-60 overflow-y-auto mb-4 border rounded-lg" id="contactsForGroup">
-            </div>
-            <div class="flex justify-end gap-2">
-                <button onclick="GroupManager.closeModal()" 
-                        class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                    Annuler
-                </button>
-                <button onclick="GroupManager.createNewGroup()" 
-                        class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
-                    Créer
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="groupMembersModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-xl w-96">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-semibold">Membres du groupe</h3>
-                <button onclick="closeGroupMembersModal()" class="text-gray-500 hover:text-gray-700">
-                    <i class='bx bx-x text-2xl'></i>
-                </button>
-            </div>
-            <div id="groupMembersList" class="max-h-60 overflow-y-auto">
-            </div>
-        </div>
-    </div>
-</body>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
