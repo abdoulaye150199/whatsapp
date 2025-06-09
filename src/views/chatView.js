@@ -445,6 +445,11 @@ function initMessageInput(onSendMessage) {
           </svg>
         </div>
       `;
+      
+      // Supprimer l'ancien écouteur d'événement
+      voiceBtn.removeEventListener('click', handleVoiceRecord);
+      
+      // Ajouter le nouvel écouteur pour l'envoi
       voiceBtn.onclick = () => {
         const messageInput = document.getElementById('message-input');
         if (messageInput && messageInput.value.trim()) {
@@ -465,7 +470,12 @@ function initMessageInput(onSendMessage) {
           </svg>
         </div>
       `;
-      voiceBtn.onclick = handleVoiceRecord; // Fonction pour gérer l'enregistrement vocal
+      
+      // Supprimer l'ancien écouteur onclick
+      voiceBtn.onclick = null;
+      
+      // Ajouter l'écouteur pour l'enregistrement vocal
+      voiceBtn.addEventListener('click', handleVoiceRecord);
     }
   }
 
