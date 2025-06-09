@@ -220,20 +220,13 @@ function initMessageInput(onSendMessage) {
 
   async function handleVoiceRecord(e) {
     try {
-      if (!isRecording) {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          } 
-        });
-        
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
-        isRecording = true;
-        recordingStartTime = Date.now();
-        wasCanceled = false;
+        if (!isRecording) {
+            // Démarrer l'enregistrement
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            isRecording = true;
+            recordingStartTime = Date.now();
 
         // Interface d'enregistrement
         messageInputContainer.innerHTML = `
@@ -257,53 +250,80 @@ function initMessageInput(onSendMessage) {
           </div>
         `;
 
-        // Gestionnaires d'événements pour l'enregistrement
-        mediaRecorder.addEventListener("dataavailable", (event) => {
-          audioChunks.push(event.data);
-        });
+            // Modifier la partie des événements du mediaRecorder
+            mediaRecorder.addEventListener("dataavailable", (event) => {
+              audioChunks.push(event.data);
+            });
 
         mediaRecorder.addEventListener("stop", () => {
           const tracks = stream.getTracks();
           tracks.forEach(track => track.stop());
 
-          if (!wasCanceled && audioChunks.length > 0) {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const duration = getDuration(recordingStartTime);
-            onSendMessage(null, true, duration, audioBlob);
-          }
+                if (!wasCanceled && audioChunks.length > 0) {
+                    const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
+                    const duration = getDuration(recordingStartTime);
+                    onSendMessage("Message vocal", true, duration, audioBlob);
+                }
 
           resetRecording();
         });
 
-        // Gestionnaires des boutons d'enregistrement
-        document.getElementById('cancel-record').addEventListener('click', () => {
-          wasCanceled = true;
-          mediaRecorder.stop();
-        });
+            // Modifier les écouteurs d'événements des boutons
+            const cancelBtn = document.getElementById('cancel-record');
+            const sendBtn = document.getElementById('send-record');
+
+            cancelBtn.addEventListener('click', () => {
+                wasCanceled = true;
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+                resetRecording();
+            });
 
         document.getElementById('send-record').addEventListener('click', () => {
           wasCanceled = false;
           mediaRecorder.stop();
         });
 
-        // Timer d'enregistrement
-        let seconds = 0;
-        recordingTimer = setInterval(() => {
-          seconds++;
-          const minutes = Math.floor(seconds / 60);
-          const remainingSeconds = seconds % 60;
-          const timerElement = document.getElementById('recording-timer');
-          if (timerElement) {
-            timerElement.textContent = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-          }
-        }, 1000);
+            // Démarrer le timer
+            let seconds = 0;
+            recordingTimer = setInterval(() => {
+              seconds++;
+              const minutes = Math.floor(seconds / 60);
+              const remainingSeconds = seconds % 60;
+              document.getElementById('recording-timer').textContent = 
+                `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }, 1000);
 
-        mediaRecorder.start();
-      }
+            // Gérer les événements de glissement
+            document.addEventListener('mousemove', handleRecordingMove);
+            document.addEventListener('mouseup', handleRecordingEnd);
+
+            // Collecter l'audio
+            mediaRecorder.addEventListener("dataavailable", (event) => {
+              audioChunks.push(event.data);
+            });
+
+            mediaRecorder.addEventListener("stop", () => {
+              const tracks = stream.getTracks();
+              tracks.forEach(track => track.stop());
+
+              if (!wasCanceled && audioChunks.length > 0) {
+                  const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
+                  const duration = getDuration(recordingStartTime);
+                  onSendMessage("Message vocal", true, duration, audioBlob);
+              }
+
+              // Réinitialiser pour permettre un nouvel enregistrement
+              resetRecording();
+            });
+
+            mediaRecorder.start();
+        }
     } catch (error) {
-      console.error("Erreur d'accès au microphone:", error);
-      alert("Impossible d'accéder au microphone. Vérifiez les permissions.");
-      resetRecording();
+        console.error("Erreur d'accès au microphone:", error);
+        alert("Impossible d'accéder au microphone");
+        resetRecording();
     }
   }
 
