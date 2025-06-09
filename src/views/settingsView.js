@@ -1,13 +1,21 @@
 import { getCurrentUser } from '../models/userModel.js';
+import { logout } from '../utils/auth.js';
 
 function renderSettingsView() {
-  // Hide chat content and show settings view
-  document.getElementById('chat-content').style.display = 'none';
+  // Vérifier si un conteneur de paramètres existe déjà
+  const existingSettings = document.getElementById('settings-container');
+  if (existingSettings) {
+    return; // Si le conteneur existe déjà, ne rien faire
+  }
+
+  // Au lieu de masquer chat-content, on masque chat-list
+  const chatList = document.getElementById('chat-list-container');
+  chatList.style.display = 'none';
   
-  // Create settings container
+  // Create settings container avec la même largeur que la liste des chats
   const container = document.createElement('div');
   container.id = 'settings-container';
-  container.className = 'flex-1 flex flex-col bg-[#111b21]';
+  container.className = 'w-[380px] border-r border-gray-700 flex flex-col bg-[#111b21]';
   
   // Create header
   const header = document.createElement('div');
@@ -42,18 +50,21 @@ function renderSettingsView() {
   // Get current user
   const currentUser = getCurrentUser();
   
-  // Create user profile section
+  // Create user profile section avec l'image du profil actuel
   const profileSection = document.createElement('div');
-  profileSection.className = 'p-4 bg-[#111b21] border-b border-gray-700';
+  profileSection.className = 'flex items-center p-4 hover:bg-[#202c33] cursor-pointer';
   profileSection.innerHTML = `
-    <div class="flex items-center cursor-pointer hover:bg-[#2a3942] p-3 rounded-lg transition-colors">
-      <div class="w-16 h-16 rounded-full overflow-hidden mr-4">
-        <img src="${currentUser.avatar}" alt="Profile" class="w-full h-full object-cover">
-      </div>
-      <div>
-        <h3 class="text-white text-lg font-medium">AbdAllah</h3>
-        <p class="text-gray-400 text-sm">Salut ! J'utilise WhatsApp.</p>
-      </div>
+    <div class="w-16 h-16 rounded-full overflow-hidden mr-4">
+      <img 
+        src="./src/assets/images/profile.jpeg" 
+        alt="Photo de profil"
+        class="w-full h-full object-cover"
+        onerror="this.src='https://via.placeholder.com/160?text=U'"
+      />
+    </div>
+    <div>
+      <h3 class="text-white text-lg" id="profile-name">AbdAllah</h3>
+      <p class="text-gray-400">Salut ! J'utilise WhatsApp.</p>
     </div>
   `;
   
@@ -130,7 +141,7 @@ function renderSettingsView() {
   container.appendChild(logoutSection);
   
   // Add to DOM
-  document.getElementById('chat-content').insertAdjacentElement('afterend', container);
+  chatList.parentNode.insertBefore(container, chatList);
   
   // Initialize event listeners
   initSettingsEvents();
@@ -155,6 +166,16 @@ function initSettingsEvents() {
       }
     });
   });
+
+  // Ajouter l'événement de déconnexion
+  const logoutSection = document.querySelector('.text-red-500.text-lg').parentElement;
+  logoutSection.addEventListener('click', () => {
+    try {
+      logout(); // Appeler la fonction logout qui redirige vers login.html
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
+  });
 }
 
 function hideSettingsView() {
@@ -162,7 +183,10 @@ function hideSettingsView() {
   if (container) {
     container.remove();
   }
-  document.getElementById('chat-content').style.display = 'flex';
+  const chatList = document.getElementById('chat-list-container');
+  if (chatList) {
+    chatList.style.display = 'flex';
+  }
 }
 
 export { renderSettingsView, hideSettingsView };

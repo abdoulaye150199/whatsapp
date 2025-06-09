@@ -1,31 +1,33 @@
 import { generateRandomAvatar } from '../utils/helpers.js';
 
 // Current user information
-const currentUser = {
+let currentUser = {
   id: 0,
-  name: "Current User",
-  status: "online",
-  avatar: generateRandomAvatar(),
-  phone: "+221 77 123 45 67"
+  name: 'AbdAllah',
+  status: 'Salut ! J\'utilise WhatsApp.',
+  avatar: './src/assets/images/profile.jpeg',
+  phone: '+221 77 123 45 67'
 };
 
-function getCurrentUser() {
-  return { ...currentUser };
+export function getCurrentUser() {
+  return currentUser;
 }
 
-function updateUserStatus(status) {
-  currentUser.status = status;
-  return currentUser.status;
+export function updateUserProfile(data) {
+  currentUser = { ...currentUser, ...data };
+  updateProfileUI();
 }
 
-function updateUserAvatar(avatar) {
-  currentUser.avatar = avatar;
-  return currentUser.avatar;
-}
+export function updateProfileUI() {
+  // Mettre à jour l'avatar dans la barre latérale
+  const sidebarAvatar = document.getElementById('current-user-avatar');
+  if (sidebarAvatar) {
+    sidebarAvatar.src = currentUser.avatar;
+  }
 
-function updateUserName(name) {
-  currentUser.name = name;
-  return currentUser.name;
+  // Mettre à jour l'avatar dans les paramètres si visible
+  const settingsAvatar = document.querySelector('#settings-container img');
+  if (settingsAvatar) {
+    settingsAvatar.src = currentUser.avatar;
+  }
 }
-
-export { getCurrentUser, updateUserStatus, updateUserAvatar, updateUserName };
