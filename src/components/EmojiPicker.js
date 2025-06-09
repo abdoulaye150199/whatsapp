@@ -123,8 +123,9 @@ class EmojiPicker {
   create() {
     this.container = document.createElement('div');
     this.container.id = 'emoji-picker';
-    this.container.className = 'absolute bottom-16 left-0 w-80 h-96 bg-[#2a3942] rounded-lg shadow-2xl border border-gray-600 z-50 hidden';
+    this.container.className = 'fixed bottom-20 left-4 w-[350px] h-[400px] bg-[#2a3942] rounded-lg shadow-2xl border border-gray-600 z-50 hidden';
     
+    // Contenu HTML inchangé
     this.container.innerHTML = `
       <div class="flex flex-col h-full">
         <!-- Search bar -->
@@ -166,8 +167,68 @@ class EmojiPicker {
         </div>
       </div>
     `;
+
+    // Attacher les événements immédiatement après la création
+    this.attachEvents();
+    
+    // Peupler les emojis initiaux
+    this.populateEmojis(this.currentCategory);
     
     return this.container;
+  }
+
+  show(onEmojiSelect) {
+    this.onEmojiSelect = onEmojiSelect;
+    this.isVisible = true;
+    this.container.classList.remove('hidden');
+  }
+
+  hide() {
+    this.isVisible = false;
+    this.container.classList.add('hidden');
+  }
+
+  toggle(onEmojiSelect) {
+    if (this.isVisible) {
+      this.hide();
+    } else {
+      this.show(onEmojiSelect);
+    }
+  }
+
+  attachEvents() {
+    // Améliorer la détection des clics à l'extérieur
+    document.addEventListener('click', (e) => {
+      if (this.isVisible && 
+          !this.container.contains(e.target) && 
+          !e.target.closest('#emoji-btn')) {
+        this.hide();
+      }
+    });
+
+    // Category tabs
+    this.container.querySelectorAll('.emoji-category-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const category = e.currentTarget.dataset.category;
+        this.switchCategory(category);
+      });
+    });
+
+    // Emoji buttons
+    this.container.addEventListener('click', (e) => {
+      if (e.target.classList.contains('emoji-btn')) {
+        const emoji = e.target.dataset.emoji;
+        this.selectEmoji(emoji);
+      }
+    });
+
+    // Search functionality
+    const searchInput = this.container.querySelector('#emoji-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this.searchEmojis(e.target.value);
+      });
+    }
   }
 
   show(onEmojiSelect) {
@@ -207,6 +268,15 @@ class EmojiPicker {
   }
 
   attachEvents() {
+    // Améliorer la détection des clics à l'extérieur
+    document.addEventListener('click', (e) => {
+      if (this.isVisible && 
+          !this.container.contains(e.target) && 
+          !e.target.closest('#emoji-btn')) {
+        this.hide();
+      }
+    });
+
     // Category tabs
     this.container.querySelectorAll('.emoji-category-tab').forEach(tab => {
       tab.addEventListener('click', (e) => {
@@ -225,16 +295,11 @@ class EmojiPicker {
 
     // Search functionality
     const searchInput = this.container.querySelector('#emoji-search');
-    searchInput.addEventListener('input', (e) => {
-      this.searchEmojis(e.target.value);
-    });
-
-    // Close on outside click
-    document.addEventListener('click', (e) => {
-      if (this.isVisible && !this.container.contains(e.target) && !e.target.closest('#emoji-btn')) {
-        this.hide();
-      }
-    });
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this.searchEmojis(e.target.value);
+      });
+    }
   }
 
   switchCategory(category) {

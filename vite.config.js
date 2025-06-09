@@ -1,9 +1,18 @@
-export default {
-  root: './',
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  base: './',
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: './index.html',
+        login: './login.html'
+      }
+    }
   },
+  // Configuration du serveur de développement
   server: {
-    port: 3000
+    hmr: false
   }
-}
+})

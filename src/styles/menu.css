@@ -1,0 +1,41 @@
+.menu-modal {
+  animation: fadeIn 0.1s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-item {
+  transition: background-color 0.2s ease;
+}
+
+.attachment-modal {
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.attachment-item {
+  transition: all 0.2s ease;
+}
+
+.attachment-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

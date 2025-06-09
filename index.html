@@ -5,12 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/whatsapp-icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WhatsApp</title>
+    
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
   </head>
   <body class="bg-[#111b21] text-gray-200 overflow-hidden">
     <div id="app" class="h-screen flex">
-      <!-- Side navigation bar -->
       <div id="side-nav" class="w-[70px] bg-[#202c33] flex flex-col items-center py-4 border-r border-gray-700">
-        <!-- Chat icon with notification badge -->
         <div class="relative mb-8">
           <button id="chats-btn" class="w-12 h-12 bg-[#00a884] rounded-full flex items-center justify-center text-white hover:bg-[#00916a] transition-colors">
             <div class="w-6 h-6"></div>
@@ -136,7 +138,9 @@
             <div class="w-6 h-6"></div>
           </button>
           <button id="attach-btn" class="text-gray-400 hover:text-white">
-            <div class="w-6 h-6"></div>
+            <div class="w-6 h-6">
+              <!-- L'icône sera injectée ici -->
+            </div>
           </button>
           <div class="flex-1">
             <input

@@ -2,9 +2,32 @@ import './index.css';
 import { renderIcons } from './utils/helpers.js';
 import { initApp } from './controllers/appController.js';
 import { isAuthenticated, requireAuth } from './utils/auth.js';
+import { renderAttachmentModal, hideAttachmentModal } from './views/attachmentModalView.js';
+
+// Fonction pour initialiser les gestionnaires d'événements
+function initializeEventListeners() {
+  const attachButton = document.getElementById('attach-btn');
+  
+  if (attachButton) {
+    attachButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const rect = e.currentTarget.getBoundingClientRect();
+      const position = {
+        x: rect.left,
+        y: rect.bottom + 5
+      };
+      
+      renderAttachmentModal(position);
+    });
+  }
+}
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+  initializeEventListeners();
+  
   // Render all icons
   renderIcons();
   

@@ -1,6 +1,7 @@
 import { getCurrentUser } from '../models/userModel.js';
 import { initChat } from './chatController.js';
 import { renderSettingsView } from '../views/settingsView.js';
+import { initMenuController } from './menuController.js';
 
 // Initialize the application
 function initApp() {
@@ -9,6 +10,9 @@ function initApp() {
   
   // Initialize chat functionality
   initChat();
+  
+  // Initialiser le contrôleur de menu
+  initMenuController();
   
   // Add event listeners for navigation buttons
   initNavigation();
