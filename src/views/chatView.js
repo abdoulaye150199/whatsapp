@@ -222,51 +222,76 @@ function initMessageInput(onSendMessage) {
     try {
         if (!isRecording) {
             // Démarrer l'enregistrement
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+                sampleRate: 44100
+              } 
+            });
+            
+            // Utiliser un format audio plus compatible
+            const options = {
+              mimeType: 'audio/webm;codecs=opus'
+            };
+            
+            // Fallback si webm n'est pas supporté
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+              options.mimeType = 'audio/mp4';
+              if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options.mimeType = 'audio/wav';
+              }
+            }
+            
+            mediaRecorder = new MediaRecorder(stream, options);
             audioChunks = [];
             isRecording = true;
             recordingStartTime = Date.now();
+            wasCanceled = false;
 
-        // Interface d'enregistrement
-        messageInputContainer.innerHTML = `
-          <div class="flex items-center w-full bg-[#2a3942] rounded-lg px-4 py-2">
-            <div class="flex-1 flex items-center">
-              <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-3"></div>
-              <span class="text-gray-400" id="recording-timer">0:00</span>
-            </div>
-            <div class="flex items-center gap-4">
-              <button id="cancel-record" class="text-gray-400 hover:text-red-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              <button id="send-record" class="text-gray-400 hover:text-green-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        `;
+            // Changer l'apparence pendant l'enregistrement
+            messageInputContainer.innerHTML = `
+              <div class="flex items-center w-full bg-[#2a3942] rounded-lg px-4 py-2">
+                <div class="flex-1 flex items-center">
+                  <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-3"></div>
+                  <span class="text-gray-400" id="recording-timer">0:00</span>
+                </div>
+                <div class="flex items-center gap-4">
+                  <button id="cancel-record" class="text-gray-400 hover:text-red-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <button id="send-record" class="text-gray-400 hover:text-green-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            `;
 
-            // Modifier la partie des événements du mediaRecorder
+            // Collecter l'audio
             mediaRecorder.addEventListener("dataavailable", (event) => {
-              audioChunks.push(event.data);
+              if (event.data.size > 0) {
+                audioChunks.push(event.data);
+              }
             });
 
-        mediaRecorder.addEventListener("stop", () => {
-          const tracks = stream.getTracks();
-          tracks.forEach(track => track.stop());
+            mediaRecorder.addEventListener("stop", () => {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
 
                 if (!wasCanceled && audioChunks.length > 0) {
-                    const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
                     const duration = getDuration(recordingStartTime);
                     onSendMessage("Message vocal", true, duration, audioBlob);
                 }
 
-          resetRecording();
-        });
+                // Réinitialiser pour permettre un nouvel enregistrement
+                resetRecording();
+            });
 
             // Modifier les écouteurs d'événements des boutons
             const cancelBtn = document.getElementById('cancel-record');
@@ -277,13 +302,14 @@ function initMessageInput(onSendMessage) {
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
                 }
-                resetRecording();
             });
 
-        document.getElementById('send-record').addEventListener('click', () => {
-          wasCanceled = false;
-          mediaRecorder.stop();
-        });
+            sendBtn.addEventListener('click', () => {
+                wasCanceled = false;
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            });
 
             // Démarrer le timer
             let seconds = 0;
@@ -291,38 +317,19 @@ function initMessageInput(onSendMessage) {
               seconds++;
               const minutes = Math.floor(seconds / 60);
               const remainingSeconds = seconds % 60;
-              document.getElementById('recording-timer').textContent = 
-                `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+              const timerElement = document.getElementById('recording-timer');
+              if (timerElement) {
+                timerElement.textContent = 
+                  `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+              }
             }, 1000);
 
-            // Gérer les événements de glissement
-            document.addEventListener('mousemove', handleRecordingMove);
-            document.addEventListener('mouseup', handleRecordingEnd);
-
-            // Collecter l'audio
-            mediaRecorder.addEventListener("dataavailable", (event) => {
-              audioChunks.push(event.data);
-            });
-
-            mediaRecorder.addEventListener("stop", () => {
-              const tracks = stream.getTracks();
-              tracks.forEach(track => track.stop());
-
-              if (!wasCanceled && audioChunks.length > 0) {
-                  const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
-                  const duration = getDuration(recordingStartTime);
-                  onSendMessage("Message vocal", true, duration, audioBlob);
-              }
-
-              // Réinitialiser pour permettre un nouvel enregistrement
-              resetRecording();
-            });
-
-            mediaRecorder.start();
+            // Démarrer l'enregistrement
+            mediaRecorder.start(100); // Collecter les données toutes les 100ms
         }
     } catch (error) {
         console.error("Erreur d'accès au microphone:", error);
-        alert("Impossible d'accéder au microphone");
+        alert("Impossible d'accéder au microphone. Vérifiez les permissions.");
         resetRecording();
     }
   }
