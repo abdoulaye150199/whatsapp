@@ -84,17 +84,21 @@ function createMessageElement(message) {
     playButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
     
     const waveform = document.createElement('div');
-    waveform.className = 'h-8 w-32 bg-[#2a3942] rounded-lg';
+    waveform.className = 'h-8 w-32 bg-[#2a3942] rounded-lg flex items-center justify-center';
+    waveform.innerHTML = '<div class="flex gap-1 items-center">' + 
+      Array.from({length: 20}, () => '<div class="w-1 bg-gray-400 rounded" style="height: ' + (Math.random() * 20 + 5) + 'px"></div>').join('') +
+      '</div>';
     
     const duration = document.createElement('span');
     duration.className = 'text-sm text-gray-400';
     duration.textContent = message.duration || '00:00';
 
     // Créer un élément audio caché
-    const audioElement = new Audio();
-    if (message.audio instanceof Blob) {
-      const audioUrl = URL.createObjectURL(message.audio);
+    const audioElement = document.createElement('audio');
+    if (message.audioBlob instanceof Blob) {
+      const audioUrl = URL.createObjectURL(message.audioBlob);
       audioElement.src = audioUrl;
+      audioElement.preload = 'metadata';
       
       // Nettoyer l'URL lorsque l'élément est supprimé
       messageElement.addEventListener('remove', () => {
@@ -108,9 +112,17 @@ function createMessageElement(message) {
     playButton.addEventListener('click', () => {
       const allAudioElements = document.querySelectorAll('audio');
       allAudioElements.forEach(audio => {
-        if (audio !== audioElement) {
+        if (audio !== audioElement && !audio.paused) {
           audio.pause();
           audio.currentTime = 0;
+        }
+      });
+
+      // Arrêter tous les autres boutons de lecture
+      const allPlayButtons = document.querySelectorAll('.voice-play-btn');
+      allPlayButtons.forEach(btn => {
+        if (btn !== playButton) {
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
         }
       });
 
@@ -118,17 +130,25 @@ function createMessageElement(message) {
         audioElement.pause();
         audioElement.currentTime = 0;
         playButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+        isPlaying = false;
       } else {
-        audioElement.play();
-        playButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+        audioElement.play().then(() => {
+          playButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+          isPlaying = true;
+        }).catch(error => {
+          console.error('Erreur lors de la lecture audio:', error);
+          alert('Impossible de lire l\'audio');
+        });
       }
-      isPlaying = !isPlaying;
     });
 
     audioElement.addEventListener('ended', () => {
       isPlaying = false;
       playButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
     });
+
+    // Ajouter une classe pour identifier les boutons de lecture
+    playButton.classList.add('voice-play-btn');
 
     voiceContainer.appendChild(playButton);
     voiceContainer.appendChild(waveform);
@@ -202,11 +222,33 @@ function initMessageInput(onSendMessage) {
     try {
         if (!isRecording) {
             // Démarrer l'enregistrement
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+                sampleRate: 44100
+              } 
+            });
+            
+            // Utiliser un format audio plus compatible
+            const options = {
+              mimeType: 'audio/webm;codecs=opus'
+            };
+            
+            // Fallback si webm n'est pas supporté
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+              options.mimeType = 'audio/mp4';
+              if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options.mimeType = 'audio/wav';
+              }
+            }
+            
+            mediaRecorder = new MediaRecorder(stream, options);
             audioChunks = [];
             isRecording = true;
             recordingStartTime = Date.now();
+            wasCanceled = false;
 
             // Changer l'apparence pendant l'enregistrement
             messageInputContainer.innerHTML = `
@@ -230,9 +272,11 @@ function initMessageInput(onSendMessage) {
               </div>
             `;
 
-            // Modifier la partie des événements du mediaRecorder
+            // Collecter l'audio
             mediaRecorder.addEventListener("dataavailable", (event) => {
-              audioChunks.push(event.data);
+              if (event.data.size > 0) {
+                audioChunks.push(event.data);
+              }
             });
 
             mediaRecorder.addEventListener("stop", () => {
@@ -240,7 +284,7 @@ function initMessageInput(onSendMessage) {
                 tracks.forEach(track => track.stop());
 
                 if (!wasCanceled && audioChunks.length > 0) {
-                    const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
                     const duration = getDuration(recordingStartTime);
                     onSendMessage("Message vocal", true, duration, audioBlob);
                 }
@@ -258,7 +302,6 @@ function initMessageInput(onSendMessage) {
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
                 }
-                resetRecording();
             });
 
             sendBtn.addEventListener('click', () => {
@@ -274,64 +317,20 @@ function initMessageInput(onSendMessage) {
               seconds++;
               const minutes = Math.floor(seconds / 60);
               const remainingSeconds = seconds % 60;
-              document.getElementById('recording-timer').textContent = 
-                `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+              const timerElement = document.getElementById('recording-timer');
+              if (timerElement) {
+                timerElement.textContent = 
+                  `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+              }
             }, 1000);
 
-            // Gérer les événements de glissement
-            document.addEventListener('mousemove', handleRecordingMove);
-            document.addEventListener('mouseup', handleRecordingEnd);
-
-            // Collecter l'audio
-            mediaRecorder.addEventListener("dataavailable", (event) => {
-              audioChunks.push(event.data);
-            });
-
-            mediaRecorder.addEventListener("stop", () => {
-              const tracks = stream.getTracks();
-              tracks.forEach(track => track.stop());
-
-              if (!wasCanceled && audioChunks.length > 0) {
-                  const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
-                  const duration = getDuration(recordingStartTime);
-                  onSendMessage("Message vocal", true, duration, audioBlob);
-              }
-
-              // Réinitialiser pour permettre un nouvel enregistrement
-              resetRecording();
-            });
-
-            mediaRecorder.start();
+            // Démarrer l'enregistrement
+            mediaRecorder.start(100); // Collecter les données toutes les 100ms
         }
     } catch (error) {
         console.error("Erreur d'accès au microphone:", error);
-        alert("Impossible d'accéder au microphone");
+        alert("Impossible d'accéder au microphone. Vérifiez les permissions.");
         resetRecording();
-    }
-  }
-
-  function handleRecordingMove(e) {
-    if (!isRecording) return;
-    
-    // Calculer la distance de glissement
-    const deltaX = e.clientX - startX;
-    if (deltaX < -100) { // Si glissé vers la gauche
-      document.getElementById('cancel-record')?.classList.add('text-red-500');
-    } else {
-      document.getElementById('cancel-record')?.classList.remove('text-red-500');
-    }
-  }
-
-  function handleRecordingEnd(e) {
-    if (!isRecording) return;
-
-    const deltaX = e.clientX - startX;
-    if (deltaX < -100) {
-      // Annuler l'enregistrement
-      cancelRecording();
-    } else {
-      // Arrêter et envoyer l'enregistrement
-      stopRecording();
     }
   }
 
@@ -340,10 +339,7 @@ function initMessageInput(onSendMessage) {
     const voiceBtn = document.getElementById('voice-btn');
     const emojiBtn = document.getElementById('emoji-btn');
 
-    // Réinitialiser les écouteurs d'événements existants
-    messageInput.removeEventListener('input', handleInput);
-    messageInput.removeEventListener('keypress', handleKeyPress);
-    voiceBtn.removeEventListener('click', handleVoiceRecord);
+    if (!messageInput || !voiceBtn || !emojiBtn) return;
 
     // Définir les fonctions de gestion d'événements
     function handleInput() {
@@ -361,7 +357,6 @@ function initMessageInput(onSendMessage) {
     // Ajouter les nouveaux écouteurs d'événements
     messageInput.addEventListener('input', handleInput);
     messageInput.addEventListener('keypress', handleKeyPress);
-    voiceBtn.addEventListener('click', handleVoiceRecord);
 
     // Réattacher l'événement emoji
     emojiBtn.addEventListener('click', (e) => {
@@ -385,10 +380,6 @@ function initMessageInput(onSendMessage) {
     isRecording = false;
     clearInterval(recordingTimer);
     
-    // Nettoyer les écouteurs d'événements
-    document.removeEventListener('mousemove', handleRecordingMove);
-    document.removeEventListener('mouseup', handleRecordingEnd);
-    
     // Arrêter le stream audio
     if (mediaRecorder && mediaRecorder.stream) {
         mediaRecorder.stream.getTracks().forEach(track => track.stop());
@@ -411,20 +402,6 @@ function initMessageInput(onSendMessage) {
     audioChunks = [];
     startX = 0;
     wasCanceled = false;
-  }
-
-  function cancelRecording() {
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-      audioChunks = [];
-    }
-    resetRecording();
-  }
-
-  function stopRecording() {
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-    }
   }
 
   // Sauvegarder le HTML original

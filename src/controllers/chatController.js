@@ -74,12 +74,12 @@ function initSearch() {
   });
 }
 
-// Handle sending a message
-function handleSendMessage(text, isVoice = false, duration = null) {
+// Handle sending a message - Modifié pour supporter les messages vocaux
+function handleSendMessage(text, isVoice = false, duration = null, audioBlob = null) {
   if (!activeChat) return;
   
-  // Add message to the model
-  const newMessage = addMessage(activeChat.id, text, true, isVoice, duration);
+  // Add message to the model avec le blob audio
+  const newMessage = addMessage(activeChat.id, text, true, isVoice, duration, audioBlob);
   
   // Update the view
   addMessageToChat(newMessage);

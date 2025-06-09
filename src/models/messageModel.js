@@ -40,7 +40,8 @@ function getMessagesByChatId(chatId) {
   return messages[chatId] || [];
 }
 
-function addMessage(chatId, text, isMe = true, isVoice = false, duration = null) {
+// Modifié pour supporter les messages vocaux avec blob audio
+function addMessage(chatId, text, isMe = true, isVoice = false, duration = null, audioBlob = null) {
   if (!messages[chatId]) {
     messages[chatId] = [];
   }
@@ -51,7 +52,8 @@ function addMessage(chatId, text, isMe = true, isVoice = false, duration = null)
     timestamp: getCurrentTime(),
     isMe,
     isVoice,
-    duration
+    duration,
+    audioBlob // Ajouter le blob audio au message
   };
   
   messages[chatId].push(newMessage);
