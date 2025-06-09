@@ -6,6 +6,7 @@
     <title>WhatsApp Web</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./src/styles/login.css">
+     <link rel="stylesheet" href="./src/styles/validation.css">
 </head>
 <body class="bg-white text-[#41525d]">
     <div class="min-h-screen flex flex-col">
@@ -51,12 +52,15 @@
                             required
                             class="w-full p-4 pl-6 border rounded-[25px] text-[#41525d] bg-white border-[#e1e9eb] focus:border-[#008069] focus:outline-none"
                         >
+                        <!-- Ajouter cette div pour les messages d'erreur -->
+                        <div id="phone-error" class="text-red-500 text-sm mt-2 ml-4"></div>
                     </div>
 
                     <!-- Bouton de connexion -->
                     <div class="flex justify-center mt-8">
                         <button
                             type="submit"
+                            id="submit-btn"
                             class="bg-[#008069] text-white rounded-[24px] py-3 px-8 font-medium hover:bg-[#017561] transition-colors"
                         >
                             connexion

@@ -29,7 +29,6 @@ export function handleAttachmentSelection(type) {
     case 'audio':
       openFilePicker('audio/*');
       break;
-    // ... autres cas
   }
   hideAttachmentModal();
 }

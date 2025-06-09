@@ -1,4 +1,4 @@
-// Emoji picker component
+
 class EmojiPicker {
   constructor() {
     this.isVisible = false;
@@ -125,7 +125,6 @@ class EmojiPicker {
     this.container.id = 'emoji-picker';
     this.container.className = 'fixed bottom-20 left-4 w-[350px] h-[400px] bg-[#2a3942] rounded-lg shadow-2xl border border-gray-600 z-50 hidden';
     
-    // Contenu HTML inchangé
     this.container.innerHTML = `
       <div class="flex flex-col h-full">
         <!-- Search bar -->

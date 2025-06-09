@@ -1,0 +1,33 @@
+.input-error {
+  border-color: #ef4444 !important;
+  animation: shake 0.5s ease-in-out;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: none;
+  animation: slideDown 0.3s ease-in-out;
+}
+
+.error-message.visible {
+  display: block;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+@keyframes slideDown {
+  from { 
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
