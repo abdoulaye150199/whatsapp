@@ -62,14 +62,13 @@ const attachmentItems = [
 ];
 
 export function renderAttachmentModal(position) {
-  console.log('renderAttachmentModal called with position:', position);
-
+  // Fermer le modal existant s'il y en a un
   const existingModal = document.getElementById('attachment-modal');
   if (existingModal) {
-    console.log('Removing existing modal');
     existingModal.remove();
   }
 
+  // Créer le nouveau modal
   const modal = document.createElement('div');
   modal.id = 'attachment-modal';
   modal.className = 'fixed bg-[#233138] rounded-lg shadow-lg z-50 p-1 grid grid-cols-1 gap-1 w-64';
@@ -312,10 +311,12 @@ function showEventCreator() {
 
 function closeOnClickOutside(e) {
   const modal = document.getElementById('attachment-modal');
-  // Changer attach-button en attach-btn
-  const attachButton = document.getElementById('attach-btn');
+  const attachBtn = document.getElementById('attach-btn');
   
-  if (modal && !modal.contains(e.target) && e.target !== attachButton && !e.target.closest('#attach-btn')) {
+  if (modal && !modal.contains(e.target) && 
+      e.target !== attachBtn && 
+      !e.target.closest('#attach-btn') &&
+      !e.target.closest('#emoji-picker')) {
     hideAttachmentModal();
   }
 }

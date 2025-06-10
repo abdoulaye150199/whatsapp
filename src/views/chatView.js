@@ -3,6 +3,7 @@ let wasCanceled = false;
 
 // Import EmojiPicker
 import { EmojiPicker } from '../components/EmojiPicker.js';
+import { renderChatOptionsModal } from './chatOptionsModalView.js';
 
 // Render the chat header with the active chat information
 function renderChatHeader(chat) {
@@ -15,6 +16,23 @@ function renderChatHeader(chat) {
   activeChatName.textContent = chat.name;
   activeChatStatus.textContent = chat.online ? 'En ligne' : 'Hors ligne';
   activeChatAvatar.src = chat.avatar;
+
+  // Initialiser le bouton d'options
+  const optionsBtn = document.getElementById('chat-options-btn');
+  if (optionsBtn) {
+    optionsBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const buttonRect = optionsBtn.getBoundingClientRect();
+      const position = {
+        x: window.innerWidth - buttonRect.right + 5,
+        y: buttonRect.bottom + 5
+      };
+      
+      renderChatOptionsModal(position);
+    });
+  }
 }
 
 // Render messages for a specific chat

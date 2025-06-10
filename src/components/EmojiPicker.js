@@ -210,13 +210,20 @@ class EmojiPicker {
 
   attachEvents() {
     // Supprimer les anciens écouteurs d'événements
+<<<<<<< HEAD
     document.removeEventListener('click', this.handleOutsideClick);
+=======
+    if (this.handleOutsideClick) {
+      document.removeEventListener('click', this.handleOutsideClick);
+    }
+>>>>>>> 6773917 (nouveaufonct)
     
     // Améliorer la détection des clics à l'extérieur
     this.handleOutsideClick = (e) => {
       if (this.isVisible && 
           !this.container.contains(e.target) && 
-          !e.target.closest('#emoji-btn')) {
+          !e.target.closest('#emoji-btn') &&
+          !e.target.closest('#attachment-modal')) {
         this.hide();
       }
     };

@@ -1,3 +1,5 @@
+import { logout } from '../utils/auth.js';
+
 export function renderMenuModal(position) {
   // Supprimer tout modal existant
   const existingModal = document.getElementById('menu-modal');
@@ -15,30 +17,32 @@ export function renderMenuModal(position) {
     {
       text: 'Nouveau groupe',
       onClick: () => {
-        // À implémenter
         hideMenuModal();
       }
     },
     {
       text: 'Messages importants',
       onClick: () => {
-        // À implémenter
         hideMenuModal();
       }
     },
     {
       text: 'Sélectionner les discussions',
       onClick: () => {
-        // À implémenter
         hideMenuModal();
       }
     },
     {
       text: 'Déconnexion',
       onClick: () => {
-        // À implémenter
-        hideMenuModal();
-        window.location.href = 'login.html';
+        try {
+          logout();  // Appel de la fonction de déconnexion
+          hideMenuModal();
+          window.location.href = 'login.html';
+        } catch (error) {
+          console.error('Erreur lors de la déconnexion:', error);
+          alert('Une erreur est survenue lors de la déconnexion');
+        }
       },
       className: 'text-red-500'
     }
@@ -51,6 +55,12 @@ export function renderMenuModal(position) {
   `).join('');
 
   document.body.appendChild(modal);
+
+  // Ajouter les écouteurs d'événements pour chaque élément du menu
+  const menuElements = modal.querySelectorAll('div');
+  menuItems.forEach((item, index) => {
+    menuElements[index].addEventListener('click', item.onClick);
+  });
 
   // Fermer le modal en cliquant à l'extérieur
   const closeOnClickOutside = (e) => {

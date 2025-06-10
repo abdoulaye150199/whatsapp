@@ -1,14 +1,19 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vite'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  optimizeDeps: {
-    exclude: ['lucide-react'],
+  base: './',
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: './index.html',
+        login: './login.html',
+        register: './register.html'
+      }
+    }
   },
+  // Configuration du serveur de développement
   server: {
-    https: false, // Disable HTTPS for local development
-    port: 5175,
-    host: 'localhost',
-    open: true // Automatically open browser
+    hmr: false
   }
-});
+})
