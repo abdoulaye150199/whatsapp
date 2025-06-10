@@ -1,4 +1,3 @@
-
 class EmojiPicker {
   constructor() {
     this.isVisible = false;
@@ -167,67 +166,10 @@ class EmojiPicker {
       </div>
     `;
 
-    // Attacher les événements immédiatement après la création
-    this.attachEvents();
-    
     // Peupler les emojis initiaux
     this.populateEmojis(this.currentCategory);
     
     return this.container;
-  }
-
-  show(onEmojiSelect) {
-    this.onEmojiSelect = onEmojiSelect;
-    this.isVisible = true;
-    this.container.classList.remove('hidden');
-  }
-
-  hide() {
-    this.isVisible = false;
-    this.container.classList.add('hidden');
-  }
-
-  toggle(onEmojiSelect) {
-    if (this.isVisible) {
-      this.hide();
-    } else {
-      this.show(onEmojiSelect);
-    }
-  }
-
-  attachEvents() {
-    // Améliorer la détection des clics à l'extérieur
-    document.addEventListener('click', (e) => {
-      if (this.isVisible && 
-          !this.container.contains(e.target) && 
-          !e.target.closest('#emoji-btn')) {
-        this.hide();
-      }
-    });
-
-    // Category tabs
-    this.container.querySelectorAll('.emoji-category-tab').forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        const category = e.currentTarget.dataset.category;
-        this.switchCategory(category);
-      });
-    });
-
-    // Emoji buttons
-    this.container.addEventListener('click', (e) => {
-      if (e.target.classList.contains('emoji-btn')) {
-        const emoji = e.target.dataset.emoji;
-        this.selectEmoji(emoji);
-      }
-    });
-
-    // Search functionality
-    const searchInput = this.container.querySelector('#emoji-search');
-    if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        this.searchEmojis(e.target.value);
-      });
-    }
   }
 
   show(onEmojiSelect) {
@@ -267,14 +209,19 @@ class EmojiPicker {
   }
 
   attachEvents() {
+    // Supprimer les anciens écouteurs d'événements
+    document.removeEventListener('click', this.handleOutsideClick);
+    
     // Améliorer la détection des clics à l'extérieur
-    document.addEventListener('click', (e) => {
+    this.handleOutsideClick = (e) => {
       if (this.isVisible && 
           !this.container.contains(e.target) && 
           !e.target.closest('#emoji-btn')) {
         this.hide();
       }
-    });
+    };
+    
+    document.addEventListener('click', this.handleOutsideClick);
 
     // Category tabs
     this.container.querySelectorAll('.emoji-category-tab').forEach(tab => {

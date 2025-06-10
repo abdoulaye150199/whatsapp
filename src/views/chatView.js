@@ -195,13 +195,12 @@ function initMessageInput(onSendMessage) {
   const emojiBtn = document.getElementById('emoji-btn');
   const messageInputContainer = document.getElementById('message-input-container');
   let recordingTimer = null;
-  let startX = 0;
 
   // Initialize emoji picker
   if (!emojiPicker) {
     emojiPicker = new EmojiPicker();
     const emojiPickerElement = emojiPicker.create();
-    messageInputContainer.appendChild(emojiPickerElement);
+    document.body.appendChild(emojiPickerElement);
   }
 
   // Emoji button click handler
@@ -391,7 +390,7 @@ function initMessageInput(onSendMessage) {
     // Recréer et réattacher l'emoji picker
     if (emojiPicker) {
       const emojiPickerElement = emojiPicker.create();
-      messageInputContainer.appendChild(emojiPickerElement);
+      document.body.appendChild(emojiPickerElement);
     }
     
     // Réattacher les écouteurs d'événements
@@ -400,7 +399,6 @@ function initMessageInput(onSendMessage) {
     // Réinitialiser les variables
     mediaRecorder = null;
     audioChunks = [];
-    startX = 0;
     wasCanceled = false;
   }
 

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Web</title>
+    <title>WhatsApp Web - Inscription</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./src/styles/login.css">
-     <link rel="stylesheet" href="./src/styles/validation.css">
+    <link rel="stylesheet" href="./src/styles/validation.css">
 </head>
 <body class="bg-white text-[#41525d]">
     <div class="min-h-screen flex flex-col">
@@ -24,13 +24,37 @@
         <main class="flex-1 flex items-center justify-center p-4">
             <div class="max-w-md w-full bg-white rounded-3xl shadow-lg p-12">
                 <h1 class="text-[32px] text-[#41525d] font-normal text-center leading-tight mb-4">
-                    Saisissez un numéro de téléphone.
+                    Créer un compte
                 </h1>
                 <p class="text-[#8696a0] text-center text-[16px] mb-8">
-                    Sélectionnez un pays et saisissez votre numéro de téléphone.
+                    Remplissez vos informations pour créer votre compte WhatsApp.
                 </p>
 
-                <form id="loginForm" class="space-y-6">
+                <form id="registerForm" class="space-y-6">
+                    <!-- Prénom -->
+                    <div>
+                        <input
+                            type="text"
+                            id="firstName"
+                            placeholder="Prénom"
+                            required
+                            class="w-full p-4 pl-6 border rounded-[25px] text-[#41525d] bg-white border-[#e1e9eb] focus:border-[#008069] focus:outline-none"
+                        >
+                        <div id="firstName-error" class="text-red-500 text-sm mt-2 ml-4"></div>
+                    </div>
+
+                    <!-- Nom -->
+                    <div>
+                        <input
+                            type="text"
+                            id="lastName"
+                            placeholder="Nom"
+                            required
+                            class="w-full p-4 pl-6 border rounded-[25px] text-[#41525d] bg-white border-[#e1e9eb] focus:border-[#008069] focus:outline-none"
+                        >
+                        <div id="lastName-error" class="text-red-500 text-sm mt-2 ml-4"></div>
+                    </div>
+
                     <!-- Sélecteur de pays -->
                     <div class="relative">
                         <select id="country" class="w-full p-4 pl-6 border rounded-[25px] appearance-none text-[#41525d] bg-white border-[#e1e9eb] focus:border-[#008069] focus:outline-none">
@@ -52,27 +76,26 @@
                             required
                             class="w-full p-4 pl-6 border rounded-[25px] text-[#41525d] bg-white border-[#e1e9eb] focus:border-[#008069] focus:outline-none"
                         >
-                        <!-- Ajouter cette div pour les messages d'erreur -->
                         <div id="phone-error" class="text-red-500 text-sm mt-2 ml-4"></div>
                     </div>
 
-                    <!-- Bouton de connexion -->
+                    <!-- Bouton d'inscription -->
                     <div class="flex justify-center mt-8">
                         <button
                             type="submit"
                             id="submit-btn"
                             class="bg-[#008069] text-white rounded-[24px] py-3 px-8 font-medium hover:bg-[#017561] transition-colors"
                         >
-                            connexion
+                            S'inscrire
                         </button>
                     </div>
                 </form>
 
-                <!-- Lien vers l'inscription -->
+                <!-- Lien vers la connexion -->
                 <div class="text-center mt-6">
                     <p class="text-[#8696a0]">
-                        Pas encore de compte ? 
-                        <a href="register.html" class="text-[#008069] hover:underline">S'inscrire</a>
+                        Déjà un compte ? 
+                        <a href="login.html" class="text-[#008069] hover:underline">Se connecter</a>
                     </p>
                 </div>
             </div>
@@ -93,10 +116,10 @@
     <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-8 text-center">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p class="text-gray-600">Connexion en cours...</p>
+            <p class="text-gray-600">Création du compte...</p>
         </div>
     </div>
 
-    <script type="module" src="./src/controllers/loginController.js"></script>
+    <script type="module" src="./src/controllers/registerController.js"></script>
 </body>
 </html>

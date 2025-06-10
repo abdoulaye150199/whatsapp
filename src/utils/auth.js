@@ -194,17 +194,69 @@ export function clearVerificationData() {
 }
 
 /**
+ * Fonction d'inscription
+ * @param {string} phoneNumber - Numéro de téléphone de l'utilisateur
+ * @param {string} firstName - Prénom de l'utilisateur
+ * @param {string} lastName - Nom de l'utilisateur
+ */
+export function register(phoneNumber, firstName, lastName) {
+    const cleanNumber = phoneNumber.replace(/\D/g, '');
+    
+    const user = {
+        phone: formatSenegalPhone(cleanNumber),
+        firstName: firstName,
+        lastName: lastName,
+        name: `${firstName} ${lastName}`,
+        registeredAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+    };
+
+    localStorage.setItem('whatsapp_user', JSON.stringify(user));
+}
+
+/**
  * Fonction de connexion
  * @param {string} phoneNumber - Numéro de téléphone de l'utilisateur
  */
 export function login(phoneNumber) {
     const cleanNumber = phoneNumber.replace(/\D/g, '');
     
+    // Vérifier si l'utilisateur existe déjà
+    const existingUser = localStorage.getItem('whatsapp_user');
+    if (existingUser) {
+        const userData = JSON.parse(existingUser);
+        const userPhone = userData.phone.replace(/\D/g, '');
+        
+        if (userPhone === cleanNumber) {
+            // Mettre à jour la dernière connexion
+            userData.lastLogin = new Date().toISOString();
+            localStorage.setItem('whatsapp_user', JSON.stringify(userData));
+            return;
+        }
+    }
+    
+    // Si l'utilisateur n'existe pas, créer un compte basique
     const user = {
         phone: formatSenegalPhone(cleanNumber),
         name: `User-${cleanNumber}`,
+        firstName: 'Utilisateur',
+        lastName: cleanNumber,
         lastLogin: new Date().toISOString()
     };
 
     localStorage.setItem('whatsapp_user', JSON.stringify(user));
+}
+
+/**
+ * Récupère les informations de l'utilisateur connecté
+ * @returns {object|null} Les données de l'utilisateur ou null
+ */
+export function getCurrentUser() {
+    try {
+        const userData = localStorage.getItem('whatsapp_user');
+        return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+        console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+        return null;
+    }
 }
