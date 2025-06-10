@@ -2,11 +2,13 @@ import { getCurrentUser } from '../models/userModel.js';
 import { initChat } from './chatController.js';
 import { renderSettingsView } from '../views/settingsView.js';
 import { initMenuController } from './menuController.js';
+import { initChatFilters } from '../views/chatView.js';
 
 function initApp() {
   setCurrentUserAvatar();
   
   initChat();
+  initChatFilters();
 
   initMenuController();
 

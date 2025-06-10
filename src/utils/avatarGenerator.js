@@ -4,21 +4,22 @@ function generateInitialsAvatar(name, size = 120) {
   canvas.height = size;
   const ctx = canvas.getContext('2d');
   
-  // Background colors
-  const colors = {
-    'e74c3c': '#e74c3c', // red
-    '3498db': '#3498db', // blue
-    '2ecc71': '#2ecc71', // green
-    'f39c12': '#f39c12', // yellow
-    '9b59b6': '#9b59b6', // purple
-    '1abc9c': '#1abc9c', // turquoise
-    'd35400': '#d35400', // orange
-    '34495e': '#34495e'  // dark blue
-  };
+  const colors = [
+    '#7e57c2', // violet
+    '#ff7043', // orange
+    '#42a5f5', // bleu
+    '#66bb6a', // vert
+    '#ec407a', // rose
+    '#ffa726', // orange clair
+    '#8d6e63', // marron
+    '#26a69a', // turquoise
+  ];
   
   // Pick random color
-  const colorKeys = Object.keys(colors);
-  const bgColor = colors[colorKeys[Math.floor(Math.random() * colorKeys.length)]];
+  const colorIndex = Math.abs(name.split('').reduce((acc, char) => {
+    return acc + char.charCodeAt(0);
+  }, 0)) % colors.length;
+  const bgColor = colors[colorIndex];
   
   // Draw background
   ctx.fillStyle = bgColor;

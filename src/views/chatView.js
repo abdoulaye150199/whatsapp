@@ -498,11 +498,78 @@ function getDuration(startTime) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// Export all necessary functions
+// Ajouter après les imports existants
+function initChatFilters() {
+  const chatListHeader = document.querySelector('#chat-list-container');
+  if (!chatListHeader) return;
+
+  // Créer le conteneur des filtres
+  const filtersContainer = document.createElement('div');
+  filtersContainer.className = 'flex space-x-2 p-3 bg-[#111b21] border-b border-gray-700';
+  filtersContainer.innerHTML = `
+    <button class="filter-btn px-4 py-1 rounded-full text-sm font-medium bg-[#00a884] text-white hover:bg-[#06cf9c] transition-colors" data-filter="all">
+      Toutes
+    </button>
+    <button class="filter-btn px-4 py-1 rounded-full text-sm font-medium text-gray-400 hover:bg-[#202c33] transition-colors" data-filter="unread">
+      Non lues
+    </button>
+    <button class="filter-btn px-4 py-1 rounded-full text-sm font-medium text-gray-400 hover:bg-[#202c33] transition-colors" data-filter="favorites">
+      Favoris
+    </button>
+    <button class="filter-btn px-4 py-1 rounded-full text-sm font-medium text-gray-400 hover:bg-[#202c33] transition-colors" data-filter="groups">
+      Groupes
+    </button>
+  `;
+
+  // Insérer après la barre de recherche
+  const searchContainer = document.getElementById('search-container');
+  if (searchContainer) {
+    searchContainer.after(filtersContainer);
+  }
+
+  // Ajouter la gestion des événements des filtres
+  const filterButtons = filtersContainer.querySelectorAll('.filter-btn');
+  filterButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      // Retirer la classe active de tous les boutons
+      filterButtons.forEach(btn => {
+        btn.className = 'filter-btn px-4 py-1 rounded-full text-sm font-medium text-gray-400 hover:bg-[#202c33] transition-colors';
+      });
+      
+      // Ajouter la classe active au bouton cliqué
+      button.className = 'filter-btn px-4 py-1 rounded-full text-sm font-medium bg-[#00a884] text-white hover:bg-[#06cf9c] transition-colors';
+      
+      // Appliquer le filtre
+      filterChats(button.dataset.filter);
+    });
+  });
+}
+
+function filterChats(filterType) {
+  const chatElements = document.querySelectorAll('#chat-list .chat-item');
+  chatElements.forEach(chat => {
+    switch(filterType) {
+      case 'unread':
+        chat.style.display = chat.querySelector('.unread-count') ? 'flex' : 'none';
+        break;
+      case 'favorites':
+        chat.style.display = chat.dataset.favorite === 'true' ? 'flex' : 'none';
+        break;
+      case 'groups':
+        chat.style.display = chat.dataset.isGroup === 'true' ? 'flex' : 'none';
+        break;
+      default: // 'all'
+        chat.style.display = 'flex';
+    }
+  });
+}
+
+// Modifier les exports pour inclure les nouvelles fonctions
 export {
   renderChatHeader,
   renderMessages,
   createMessageElement,
   addMessageToChat,
-  initMessageInput
+  initMessageInput,
+  initChatFilters // Ajouter l'export de la nouvelle fonction
 };
