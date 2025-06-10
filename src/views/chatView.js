@@ -4,6 +4,7 @@ let wasCanceled = false;
 // Import EmojiPicker
 import { EmojiPicker } from '../components/EmojiPicker.js';
 import { renderChatOptionsModal } from './chatOptionsModalView.js';
+import { MenuIcon, SearchIcon } from '../utils/icons.js';  // Ajoutez l'import des icônes
 
 // Render the chat header with the active chat information
 function renderChatHeader(chat) {
@@ -11,25 +12,35 @@ function renderChatHeader(chat) {
   const activeChatName = document.getElementById('active-chat-name');
   const activeChatStatus = document.getElementById('active-chat-status');
   const activeChatAvatar = document.getElementById('active-chat-avatar');
+  const headerRight = document.querySelector('.chat-header-right');
   
   chatHeader.classList.remove('hidden');
   activeChatName.textContent = chat.name;
   activeChatStatus.textContent = chat.online ? 'En ligne' : 'Hors ligne';
   activeChatAvatar.src = chat.avatar;
 
-  // Initialiser le bouton d'options
-  const optionsBtn = document.getElementById('chat-options-btn');
-  if (optionsBtn) {
+  if (headerRight) {
+    headerRight.innerHTML = `
+      <button class="search-btn p-2 hover:bg-[#374045] rounded-full">
+        <div class="w-5 h-5 text-[#aebac1]">${SearchIcon}</div>
+      </button>
+      <button id="chat-options-btn" class="chat-options-btn p-2 hover:bg-[#374045] rounded-full">
+        <div class="w-5 h-5 text-[#aebac1]">${MenuIcon}</div>
+      </button>
+    `;
+
+    // Ajouter l'écouteur d'événements pour le bouton d'options
+    const optionsBtn = headerRight.querySelector('.chat-options-btn');
     optionsBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       
       const buttonRect = optionsBtn.getBoundingClientRect();
       const position = {
-        x: window.innerWidth - buttonRect.right + 5,
+        x: window.innerWidth - buttonRect.right + buttonRect.width + 5,
         y: buttonRect.bottom + 5
       };
-      
+
       renderChatOptionsModal(position);
     });
   }
