@@ -99,9 +99,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Extract local number
             const localNumber = phoneNumber.replace(selectedCountry.dialCode, '').replace(/\s/g, '');
             
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            login(localNumber, selectedCountry.code);
-            window.location.replace('./index.html');
+            // Avant la connexion, formater le numéro
+            const formattedPhone = `+221${phoneNumber.replace(/\D/g, '')}`;
+            try {
+              login(formattedPhone, selectedCountry.code);
+              window.location.href = 'index.html';
+            } catch (error) {
+              showError(error.message);
+            }
             
         } catch (error) {
             showError('Une erreur est survenue lors de la connexion');

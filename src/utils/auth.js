@@ -108,32 +108,23 @@ export function register(phoneNumber, firstName, lastName, countryCode = 'SN') {
  * @param {string} countryCode - Code du pays
  */
 export function login(phoneNumber, countryCode = 'SN') {
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = localStorage.getItem('whatsapp_user');
-    if (existingUser) {
-        const userData = JSON.parse(existingUser);
-        const userPhone = userData.phone.replace(/\D/g, '');
-        const inputPhone = phoneNumber.replace(/\D/g, '');
-        
-        if (userPhone === inputPhone && userData.countryCode === countryCode) {
-            // Mettre à jour la dernière connexion
-            userData.lastLogin = new Date().toISOString();
-            localStorage.setItem('whatsapp_user', JSON.stringify(userData));
-            return;
-        }
-    }
-    
-    // Si l'utilisateur n'existe pas, créer un compte basique
-    const user = {
-        phone: phoneNumber,
-        name: `User-${phoneNumber}`,
-        firstName: 'Utilisateur',
-        lastName: phoneNumber,
-        countryCode: countryCode,
-        lastLogin: new Date().toISOString()
-    };
+  // Vérifier si l'utilisateur existe dans db.json
+  const contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+  const phone = phoneNumber.replace(/\D/g, '');
+  const user = contacts.find(c => c.phone.replace(/\D/g, '') === phone);
 
-    localStorage.setItem('whatsapp_user', JSON.stringify(user));
+  if (!user) {
+    throw new Error('Numéro non enregistré');
+  }
+
+  // Stocker les infos de l'utilisateur
+  localStorage.setItem('whatsapp_user', JSON.stringify({
+    id: user.id,
+    phone: phoneNumber,
+    name: user.name,
+    countryCode: countryCode,
+    lastLogin: new Date().toISOString()
+  }));
 }
 
 /**
