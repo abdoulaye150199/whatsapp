@@ -1,13 +1,18 @@
 // Function to render the chat list
-function renderChatList(chats, onChatClick) {
+function renderChatList(chats = [], onChatClick) {
   const chatListElement = document.getElementById('chat-list');
+  if (!chatListElement) return;
+  
   chatListElement.innerHTML = '';
   
-  chats.forEach(chat => {
-    const chatElement = createChatElement(chat);
-    chatElement.addEventListener('click', () => onChatClick(chat));
-    chatListElement.appendChild(chatElement);
-  });
+  // Add null check for chats
+  if (Array.isArray(chats)) {
+    chats.forEach(chat => {
+      const chatElement = createChatElement(chat);
+      chatElement.addEventListener('click', () => onChatClick(chat));
+      chatListElement.appendChild(chatElement);
+    });
+  }
 }
 
 // Create a single chat element

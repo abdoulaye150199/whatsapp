@@ -1,11 +1,15 @@
-import { getAllContacts, searchContacts } from '../models/chatModel.js';
+import { getAllContacts, addNewContact, searchContacts } from '../models/chatModel.js';
+import { renderAddContactModal } from './addContactModalView.js';
 import { generateInitialsAvatar } from '../utils/avatarGenerator.js';
 
-function renderContacts(contacts, onContactSelect) {
+async function renderContacts(contacts, onContactSelect) {
   const contactsList = document.getElementById('contacts-list');
   if (!contactsList) return;
 
-  contactsList.innerHTML = contacts.map(contact => {
+  // Make sure contacts is an array
+  const contactsArray = Array.isArray(contacts) ? contacts : [];
+
+  contactsList.innerHTML = contactsArray.map(contact => {
     const avatar = generateInitialsAvatar(contact.name);
     
     return `
@@ -22,7 +26,7 @@ function renderContacts(contacts, onContactSelect) {
     `;
   }).join('');
 
-  // Ajouter les événements de clic sur les contacts
+  // Add click events
   const contactItems = contactsList.querySelectorAll('.contact-item');
   contactItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -36,7 +40,7 @@ function renderContacts(contacts, onContactSelect) {
   });
 }
 
-export function renderNewDiscussionView(onContactSelect) {
+export async function renderNewDiscussionView(onContactSelect) {
   // Vérifier si un conteneur existe déjà
   const existingContainer = document.getElementById('new-discussion-container');
   if (existingContainer) {
@@ -155,8 +159,9 @@ export function renderNewDiscussionView(onContactSelect) {
   // Initialiser les événements
   initNewDiscussionEvents(onContactSelect);
   
-  // Afficher les contacts initiaux avec les avatars générés
-  renderContacts(getAllContacts(), onContactSelect);
+  // Await the contacts result
+  const contacts = await getAllContacts();
+  renderContacts(contacts, onContactSelect);
 }
 
 export function hideNewDiscussionView() {
@@ -171,11 +176,15 @@ export function hideNewDiscussionView() {
   }
 }
 
-// Ajouter cette fonction pour gérer l'ajout de contact
+// Modifier la fonction handleAddContact
 function handleAddContact() {
-  console.log('Ajouter un nouveau contact');
-  // Ici vous pouvez implémenter la logique pour ajouter un nouveau contact
-  // Par exemple, ouvrir un modal avec un formulaire d'ajout de contact
+  renderAddContactModal();
+}
+
+// Ajouter cette fonction pour rafraîchir la liste
+async function refreshContactsList(onContactSelect) {
+  const contacts = await getAllContacts();
+  renderContacts(contacts, onContactSelect);
 }
 
 // Ajouter ces nouvelles fonctions
@@ -189,4 +198,17 @@ function handleNewCommunity() {
   // Implémenter la logique de création de communauté ici
 }
 
+async function initNewDiscussionEvents(onContactSelect) {
+  const searchInput = document.getElementById('contact-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', async (e) => {
+      const query = e.target.value.trim();
+      const filteredContacts = await searchContacts(query);
+      renderContacts(filteredContacts, onContactSelect);
+    });
+  }
+}
+
 // Les autres fonctions restent inchangées...
+
+export { renderContacts };

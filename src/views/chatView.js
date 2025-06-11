@@ -1,4 +1,9 @@
-// Ajouter cette variable en haut du fichier avec les autres variables globales
+// Ajouter ces variables en haut du fichier avec les autres variables globales
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let recordingStartTime = null;
+let recordingTimer = null; // Ajout de cette variable
 let wasCanceled = false;
 
 // Import EmojiPicker
@@ -211,10 +216,6 @@ function addMessageToChat(message) {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-let mediaRecorder = null;
-let audioChunks = [];
-let isRecording = false;
-let recordingStartTime = null;
 let emojiPicker = null;
 
 // Initialize the message input and voice recording
@@ -248,117 +249,89 @@ function initMessageInput(onSendMessage) {
 
   async function handleVoiceRecord(e) {
     try {
-        if (!isRecording) {
-            // Démarrer l'enregistrement
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-              audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-                sampleRate: 44100
-              } 
-            });
-            
-            // Utiliser un format audio plus compatible
-            const options = {
-              mimeType: 'audio/webm;codecs=opus'
-            };
-            
-            // Fallback si webm n'est pas supporté
-            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-              options.mimeType = 'audio/mp4';
-              if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                options.mimeType = 'audio/wav';
-              }
-            }
-            
-            mediaRecorder = new MediaRecorder(stream, options);
-            audioChunks = [];
-            isRecording = true;
-            recordingStartTime = Date.now();
-            wasCanceled = false;
-
-            // Changer l'apparence pendant l'enregistrement
-            messageInputContainer.innerHTML = `
-              <div class="flex items-center w-full bg-[#2a3942] rounded-lg px-4 py-2">
-                <div class="flex-1 flex items-center">
-                  <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-3"></div>
-                  <span class="text-gray-400" id="recording-timer">0:00</span>
-                </div>
-                <div class="flex items-center gap-4">
-                  <button id="cancel-record" class="text-gray-400 hover:text-red-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                  <button id="send-record" class="text-gray-400 hover:text-green-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            `;
-
-            // Collecter l'audio
-            mediaRecorder.addEventListener("dataavailable", (event) => {
-              if (event.data.size > 0) {
-                audioChunks.push(event.data);
-              }
-            });
-
-            mediaRecorder.addEventListener("stop", () => {
-                const tracks = stream.getTracks();
-                tracks.forEach(track => track.stop());
-
-                if (!wasCanceled && audioChunks.length > 0) {
-                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
-                    const duration = getDuration(recordingStartTime);
-                    onSendMessage("Message vocal", true, duration, audioBlob);
-                }
-
-                // Réinitialiser pour permettre un nouvel enregistrement
-                resetRecording();
-            });
-
-            // Modifier les écouteurs d'événements des boutons
-            const cancelBtn = document.getElementById('cancel-record');
-            const sendBtn = document.getElementById('send-record');
-
-            cancelBtn.addEventListener('click', () => {
-                wasCanceled = true;
-                if (mediaRecorder && mediaRecorder.state === 'recording') {
-                    mediaRecorder.stop();
-                }
-            });
-
-            sendBtn.addEventListener('click', () => {
-                wasCanceled = false;
-                if (mediaRecorder && mediaRecorder.state === 'recording') {
-                    mediaRecorder.stop();
-                }
-            });
-
-            // Démarrer le timer
-            let seconds = 0;
-            recordingTimer = setInterval(() => {
-              seconds++;
-              const minutes = Math.floor(seconds / 60);
-              const remainingSeconds = seconds % 60;
-              const timerElement = document.getElementById('recording-timer');
-              if (timerElement) {
-                timerElement.textContent = 
-                  `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-              }
-            }, 1000);
-
-            // Démarrer l'enregistrement
-            mediaRecorder.start(100); // Collecter les données toutes les 100ms
+      if (!isRecording) {
+        // Vérifier d'abord les permissions
+        const permissionResult = await navigator.permissions.query({ name: 'microphone' });
+        
+        if (permissionResult.state === 'denied') {
+          throw new Error('Permission microphone refusée');
         }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          } 
+        });
+
+        // Vérifier les types MIME supportés
+        let mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = '';  // Utiliser le type par défaut
+          }
+        }
+
+        // Créer le MediaRecorder avec le type MIME supporté
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: mimeType || undefined
+        });
+        
+        audioChunks = [];
+        isRecording = true;
+        recordingStartTime = Date.now();
+        wasCanceled = false;
+
+        // Mise à jour de l'interface d'enregistrement
+        messageInputContainer.innerHTML = `
+          <div class="flex items-center w-full bg-[#2a3942] rounded-lg px-4 py-2">
+            <div class="flex-1 flex items-center">
+              <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-3"></div>
+              <span class="text-gray-400" id="recording-timer">0:00</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <button id="cancel-record" class="text-gray-400 hover:text-red-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <button id="send-record" class="text-gray-400 hover:text-green-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        `;
+
+        startRecordingTimer();
+        
+        // Gestion des événements d'enregistrement
+        mediaRecorder.addEventListener("dataavailable", (event) => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        });
+
+        mediaRecorder.addEventListener("stop", () => {
+          if (!wasCanceled && audioChunks.length > 0) {
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+            const duration = getDuration(recordingStartTime);
+            onSendMessage("Message vocal", true, duration, audioBlob);
+          }
+          resetRecording();
+        });
+
+        // Démarrer l'enregistrement
+        mediaRecorder.start();
+        startRecordingTimer();
+      }
     } catch (error) {
-        console.error("Erreur d'accès au microphone:", error);
-        alert("Impossible d'accéder au microphone. Vérifiez les permissions.");
-        resetRecording();
+      console.error("Erreur d'accès au microphone:", error);
+      alert("Impossible d'accéder au microphone. Vérifiez les permissions dans les paramètres de votre navigateur.");
+      resetRecording();
     }
   }
 
@@ -450,18 +423,20 @@ function initMessageInput(onSendMessage) {
         </div>
       `;
       
-      // Supprimer l'ancien écouteur d'événement
-      voiceBtn.removeEventListener('click', handleVoiceRecord);
+      // Supprimer tous les écouteurs d'événements existants
+      const newVoiceBtn = voiceBtn.cloneNode(true);
+      voiceBtn.parentNode.replaceChild(newVoiceBtn, voiceBtn);
       
       // Ajouter le nouvel écouteur pour l'envoi
-      voiceBtn.onclick = () => {
+      newVoiceBtn.addEventListener('click', () => {
         const messageInput = document.getElementById('message-input');
         if (messageInput && messageInput.value.trim()) {
-          onSendMessage(messageInput.value);
+          onSendMessage(messageInput.value.trim());
           messageInput.value = '';
-          updateButton(''); // Remettre l'icône micro
+          updateButton('');
+          messageInput.focus();
         }
-      };
+      });
     } else {
       // Remettre l'icône du microphone
       voiceBtn.innerHTML = `
@@ -475,11 +450,12 @@ function initMessageInput(onSendMessage) {
         </div>
       `;
       
-      // Supprimer l'ancien écouteur onclick
-      voiceBtn.onclick = null;
+      // Supprimer tous les écouteurs d'événements existants
+      const newVoiceBtn = voiceBtn.cloneNode(true);
+      voiceBtn.parentNode.replaceChild(newVoiceBtn, voiceBtn);
       
       // Ajouter l'écouteur pour l'enregistrement vocal
-      voiceBtn.addEventListener('click', handleVoiceRecord);
+      newVoiceBtn.addEventListener('click', handleVoiceRecord);
     }
   }
 
@@ -573,3 +549,15 @@ export {
   initMessageInput,
   initChatFilters // Ajouter l'export de la nouvelle fonction
 };
+
+function startRecordingTimer() {
+  const timerElement = document.getElementById('recording-timer');
+  let seconds = 0;
+  
+  recordingTimer = setInterval(() => {
+    seconds++;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    timerElement.textContent = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }, 1000);
+}

@@ -1,68 +1,100 @@
-// Sample messages for each chat
-const messages = {
-  1: [
-    { id: 1, text: "Salut, comment vas-tu?", timestamp: "20:30", isMe: false },
-    { id: 2, text: "Je vais bien, merci! Et toi?", timestamp: "20:31", isMe: true },
-    { id: 3, text: "Fallou ya ngui may fenial li lay...", timestamp: "20:35", isMe: true }
-  ],
-  2: [
-    { id: 1, text: "Bonjour Jeanne", timestamp: "21:45", isMe: true },
-    { id: 2, text: "Bonjour! Comment ça va aujourd'hui?", timestamp: "21:50", isMe: false },
-    { id: 3, text: "Très bien et toi?", timestamp: "21:55", isMe: true },
-    { id: 4, text: "Wa ok", timestamp: "22:10", isMe: false }
-  ],
-  3: [
-    { id: 1, text: "Salam Ngom", timestamp: "21:30", isMe: true },
-    { id: 2, text: "Salam, comment ça va?", timestamp: "21:40", isMe: false },
-    { id: 3, text: "Hamdoulilah et toi?", timestamp: "21:45", isMe: true },
-    { id: 4, text: "Thiey dama fateli rek", timestamp: "22:01", isMe: false }
-  ],
-  4: [
-    { id: 1, text: "Salut AbdAllah", timestamp: "13:10", isMe: true },
-    { id: 2, text: "Salut, comment vas-tu?", timestamp: "13:15", isMe: false },
-    { id: 3, text: "Je vais bien merci", timestamp: "13:18", isMe: true },
-    { id: 4, text: "[Image]", timestamp: "14:19", isMe: false, isImage: true }
-  ]
-};
+import { updateLastMessage, createNewChat, getAllChats, getChatById } from './chatModel.js';
 
-// For chats without specific messages, create generic ones
-for (let i = 5; i <= 8; i++) {
-  if (!messages[i]) {
-    messages[i] = [
-      { id: 1, text: "Bonjour", timestamp: "09:00", isMe: false },
-      { id: 2, text: "Salut, comment vas-tu?", timestamp: "09:05", isMe: true },
-      { id: 3, text: "Je vais bien, merci! Et toi?", timestamp: "09:10", isMe: false }
-    ];
-  }
+// Define API_URL constant
+const API_URL = 'http://localhost:3000';
+
+// Initialiser un objet vide pour les messages
+let messages = {};
+
+// Charger les messages depuis le localStorage
+function loadMessages() {
+  const savedMessages = localStorage.getItem('whatsapp_messages');
+  messages = savedMessages ? JSON.parse(savedMessages) : {};
+}
+
+// Sauvegarder les messages dans le localStorage
+function saveMessages() {
+  localStorage.setItem('whatsapp_messages', JSON.stringify(messages));
 }
 
 function getMessagesByChatId(chatId) {
+  loadMessages();
   return messages[chatId] || [];
 }
 
-// Modifié pour supporter les messages vocaux avec blob audio
-function addMessage(chatId, text, isMe = true, isVoice = false, duration = null, audioBlob = null) {
-  if (!messages[chatId]) {
-    messages[chatId] = [];
+async function addMessage(chatId, text, isMe = true, isVoice = false, duration = null, audioBlob = null) {
+  if (!chatId) {
+    console.error('ChatId is required');
+    return null;
   }
+
+  loadMessages();
   
-  const newMessage = {
-    id: messages[chatId].length + 1,
-    text,
-    timestamp: getCurrentTime(),
-    isMe,
-    isVoice,
-    duration,
-    audioBlob // Ajouter le blob audio au message
-  };
-  
-  messages[chatId].push(newMessage);
-  return newMessage;
+  try {
+    let chat = await getChatById(chatId);
+    
+    if (!chat) {
+      // Créer un nouveau chat si nécessaire
+      chat = await createNewChat({
+        id: chatId,
+        name: 'New Chat',
+        status: "Hey! J'utilise WhatsApp"
+      });
+    }
+
+    const newMessage = {
+      id: Date.now(),
+      chatId,
+      text,
+      timestamp: new Date().toLocaleTimeString('fr-FR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      isMe,
+      isVoice,
+      duration,
+      audioUrl: audioBlob ? URL.createObjectURL(audioBlob) : null
+    };
+
+    if (!messages[chatId]) {
+      messages[chatId] = [];
+    }
+    
+    messages[chatId].push(newMessage);
+    saveMessages();
+
+    // Mettre à jour le dernier message
+    if (chat) {
+      await updateLastMessage(chatId, isVoice ? "Message vocal" : text);
+    }
+
+    return newMessage;
+  } catch (error) {
+    console.error('Error adding message:', error);
+    // Sauvegarder quand même le message localement
+    const newMessage = {
+      id: Date.now(),
+      chatId,
+      text,
+      timestamp: new Date().toLocaleTimeString('fr-FR'),
+      isMe,
+      isVoice,
+      duration,
+      audioUrl: audioBlob ? URL.createObjectURL(audioBlob) : null
+    };
+
+    if (!messages[chatId]) {
+      messages[chatId] = [];
+    }
+    
+    messages[chatId].push(newMessage);
+    saveMessages();
+    
+    return newMessage;
+  }
 }
 
-function getCurrentTime() {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-}
-
-export { getMessagesByChatId, addMessage };
+export {
+  getMessagesByChatId,
+  addMessage
+};

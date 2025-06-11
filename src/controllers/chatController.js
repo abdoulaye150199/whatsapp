@@ -23,18 +23,39 @@ function initChat() {
 
 function initNewChatButton() {
   const newChatBtn = document.getElementById('new-chat-btn');
-  newChatBtn.addEventListener('click', () => {
-    renderNewDiscussionView(handleNewChat);
+  if (!newChatBtn) return;
+
+  newChatBtn.addEventListener('click', async () => {
+    try {
+      await renderNewDiscussionView(handleNewChat);
+    } catch (error) {
+      console.error('Error opening new discussion view:', error);
+    }
   });
 }
 
-function handleNewChat(contact) {
-  const newChat = createNewChat(contact);
-  updateChatInList(newChat);
-  hideNewDiscussionView();
-  handleChatClick(newChat);
+async function handleNewChat(contact) {
+  try {
+    const newChat = await createNewChat(contact);
+    if (!newChat) {
+      console.error('Failed to create new chat');
+      return;
+    }
+    
+    updateChatInList(newChat);
+    hideNewDiscussionView();
+    handleChatClick(newChat);
+  } catch (error) {
+    console.error('Error creating new chat:', error);
+  }
 }
+
 function handleChatClick(chat) {
+  if (!chat || !chat.id) {
+    console.error('Invalid chat object');
+    return;
+  }
+
   if (chat.unreadCount > 0) {
     markAsRead(chat.id);
     updateChatInList(getChatById(chat.id));
@@ -57,21 +78,25 @@ function initSearch() {
   });
 }
 
-function handleSendMessage(text, isVoice = false, duration = null, audioBlob = null) {
-  if (!activeChat) return;
+async function handleSendMessage(text) {
+  if (!activeChat || !activeChat.id) {
+    console.error('No active chat or invalid chat ID');
+    return;
+  }
   
-  const newMessage = addMessage(activeChat.id, text, true, isVoice, duration, audioBlob);
-  
-  addMessageToChat(newMessage);
-
-  const updatedChat = {
-    ...activeChat,
-    lastMessage: isVoice ? "Message vocal" : text,
-    timestamp: newMessage.timestamp
-  };
-  updateChatInList(updatedChat);
-
-  simulateReply(activeChat.id);
+  try {
+    const message = await addMessage(activeChat.id, text);
+    if (message) {
+      addMessageToChat(message);
+      const chats = await getAllChats();
+      renderChatList(chats, handleChatClick);
+      
+      // Simuler une réponse
+      simulateReply(activeChat.id);
+    }
+  } catch (error) {
+    console.error('Error sending message:', error);
+  }
 }
 
 function simulateReply(chatId) {
