@@ -22,75 +22,38 @@ function getMessagesByChatId(chatId) {
   return messages[chatId] || [];
 }
 
-async function addMessage(chatId, text, isMe = true, isVoice = false, duration = null, audioBlob = null) {
-  if (!chatId) {
-    console.error('ChatId is required');
-    return null;
-  }
-
-  loadMessages();
-  
+async function addMessage(chatId, text) {
   try {
-    let chat = await getChatById(chatId);
-    
-    if (!chat) {
-      // Créer un nouveau chat si nécessaire
-      chat = await createNewChat({
-        id: chatId,
-        name: 'New Chat',
-        status: "Hey! J'utilise WhatsApp"
-      });
-    }
-
-    const newMessage = {
-      id: Date.now(),
-      chatId,
-      text,
-      timestamp: new Date().toLocaleTimeString('fr-FR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    const message = {
+      id: Date.now().toString(),
+      chatId: chatId,
+      text: text,
+      timestamp: new Date().toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit'
       }),
-      isMe,
-      isVoice,
-      duration,
-      audioUrl: audioBlob ? URL.createObjectURL(audioBlob) : null
+      sent: true
     };
 
-    if (!messages[chatId]) {
-      messages[chatId] = [];
-    }
-    
-    messages[chatId].push(newMessage);
-    saveMessages();
+    // Ajouter à l'API
+    const response = await fetch('http://localhost:3000/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(message)
+    });
 
-    // Mettre à jour le dernier message
-    if (chat) {
-      await updateLastMessage(chatId, isVoice ? "Message vocal" : text);
+    if (!response.ok) {
+      throw new Error('Erreur lors de l\'ajout du message');
     }
 
-    return newMessage;
+    await updateLastMessage(chatId, text);
+    return message;
+
   } catch (error) {
-    console.error('Error adding message:', error);
-    // Sauvegarder quand même le message localement
-    const newMessage = {
-      id: Date.now(),
-      chatId,
-      text,
-      timestamp: new Date().toLocaleTimeString('fr-FR'),
-      isMe,
-      isVoice,
-      duration,
-      audioUrl: audioBlob ? URL.createObjectURL(audioBlob) : null
-    };
-
-    if (!messages[chatId]) {
-      messages[chatId] = [];
-    }
-    
-    messages[chatId].push(newMessage);
-    saveMessages();
-    
-    return newMessage;
+    console.error('Erreur addMessage:', error);
+    return null;
   }
 }
 

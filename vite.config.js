@@ -12,8 +12,8 @@ export default defineConfig({
       }
     }
   },
-  // Configuration du serveur de développement
   server: {
-    hmr: false
+    port: 5173,
+    open: true
   }
 })

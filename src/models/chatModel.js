@@ -177,19 +177,32 @@ async function addNewContact(contact) {
   try {
     const contacts = await getAllContacts();
     
-    if (contacts.some(c => c.phone === contact.phone)) {
+    // Nettoyer le numéro de téléphone
+    let cleanPhone = contact.phone.replace(/[^\d+]/g, '');
+    if (!cleanPhone.startsWith('+')) {
+      cleanPhone = '+' + cleanPhone;
+    }
+    
+    // Vérifier si le numéro existe déjà
+    if (contacts.some(c => c.phone.replace(/[^\d+]/g, '') === cleanPhone)) {
       throw new Error('Ce numéro existe déjà');
     }
     
-    contact.id = Date.now();
-    contact.avatar = generateInitialsAvatar(contact.name);
+    const newContact = {
+      id: Date.now().toString(),
+      name: contact.name,
+      phone: cleanPhone,
+      status: contact.status || "Hey! J'utilise WhatsApp",
+      online: false,
+      avatar: contact.avatar || generateInitialsAvatar(contact.name)
+    };
     
     const response = await fetch(`${API_URL}/contacts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(contact)
+      body: JSON.stringify(newContact)
     });
 
     if (!response.ok) {
@@ -221,30 +234,20 @@ async function searchContacts(query) {
 // Ajouter la fonction createNewChat
 async function createNewChat(contact) {
   try {
-    if (!contact || !contact.id) {
-      throw new Error('Invalid contact data');
-    }
-
-    // Vérifier si le chat existe déjà
     loadChats();
-    const idStr = String(contact.id);
-    const idNum = Number(contact.id);
-    const existingChat = chats.find(chat => 
-      String(chat.id) === idStr || Number(chat.id) === idNum
-    );
+    
+    // Vérifier si le chat existe déjà
+    const existingChat = chats.find(c => String(c.id) === String(contact.id));
     if (existingChat) {
       return existingChat;
     }
 
     // Créer un nouveau chat
     const newChat = {
-      id: Number(contact.id), // S'assurer que c'est un nombre
-      name: contact.name || 'Nouvelle discussion',
+      id: contact.id,
+      name: contact.name,
       lastMessage: '',
-      timestamp: new Date().toLocaleTimeString('fr-FR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
+      timestamp: new Date().toLocaleTimeString('fr-FR'),
       unreadCount: 0,
       avatar: contact.avatar || `https://api.dicebear.com/6.x/initials/svg?seed=${contact.name}`,
       online: false,
@@ -252,13 +255,13 @@ async function createNewChat(contact) {
       messages: []
     };
 
-    // Sauvegarder localement d'abord
+    // Sauvegarder en local d'abord
     chats.push(newChat);
     saveChats();
 
-    // Puis essayer de sauvegarder dans l'API
     try {
-      const response = await fetch(`${API_URL}/chats`, {
+      // Sauvegarder dans l'API
+      const response = await fetch('http://localhost:3000/chats', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -267,25 +270,23 @@ async function createNewChat(contact) {
       });
 
       if (response.ok) {
-        const apiChat = await response.json();
-        // Mettre à jour avec la réponse de l'API
-        const index = chats.findIndex(c => 
-          String(c.id) === String(contact.id) || Number(c.id) === Number(contact.id)
-        );
+        const savedChat = await response.json();
+        // Mettre à jour le chat local avec les données de l'API
+        const index = chats.findIndex(c => String(c.id) === String(contact.id));
         if (index !== -1) {
-          chats[index] = apiChat;
+          chats[index] = savedChat;
           saveChats();
         }
-        return apiChat;
+        return savedChat;
       }
     } catch (apiError) {
-      console.warn('Failed to create chat in API, using local version:', apiError);
+      console.warn('API error, using local data:', apiError);
     }
 
     return newChat;
   } catch (error) {
-    console.error('Error creating chat:', error);
-    throw error;
+    console.error('Error in createNewChat:', error);
+    return null;
   }
 }
 

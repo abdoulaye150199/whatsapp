@@ -200,15 +200,22 @@ export function validatePhoneNumber(phone, countryCode) {
   const country = getCountryByCode(countryCode);
   if (!country) return false;
   
-  const cleanPhone = phone.replace(/[^\d]/g, '');
-  const expectedLength = country.format.replace(/[^X]/g, '').length;
+  // Nettoyer le numéro (garder uniquement les chiffres)
+  let cleanPhone = phone.replace(/[^\d+]/g, '');
   
-  // Special validation for Senegal
+  // Pour le Sénégal
   if (countryCode === 'SN') {
-    if (cleanPhone.length !== 9) return false;
-    const prefix = cleanPhone.substring(0, 2);
-    return ['77', '78', '75', '70', '76'].includes(prefix);
+    // Si le numéro commence par +221, l'enlever
+    if (cleanPhone.startsWith('+221')) {
+      cleanPhone = cleanPhone.substring(4);
+    } else if (cleanPhone.startsWith('221')) {
+      cleanPhone = cleanPhone.substring(3);
+    }
+    
+    // Vérifier la longueur (9 chiffres) et le préfixe
+    return cleanPhone.length === 9 && 
+           ['77', '78', '75', '70', '76'].includes(cleanPhone.substring(0, 2));
   }
   
-  return cleanPhone.length === expectedLength;
+  return true;
 }
