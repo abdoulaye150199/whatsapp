@@ -1,120 +1,113 @@
-import { isAuthenticated, login, validateSenegalPhone } from '../utils/auth.js';
+import { isAuthenticated, login } from '../utils/auth.js';
+import { countries, validatePhoneNumber, formatPhoneNumber } from '../utils/countryData.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     if (isAuthenticated()) {
         window.location.replace('./index.html');
         return;
     }
+
     const loginForm = document.getElementById('loginForm');
     const phoneInput = document.getElementById('phone');
+    const countrySelect = document.getElementById('country');
     const submitBtn = loginForm?.querySelector('button[type="submit"]') || document.getElementById('submit-btn');
     const phoneError = document.getElementById('phone-error');
     const loadingOverlay = document.getElementById('loadingOverlay');
-    if (!loginForm || !phoneInput || !submitBtn || !loadingOverlay) {
+
+    if (!loginForm || !phoneInput || !submitBtn || !loadingOverlay || !countrySelect) {
         console.error('Éléments manquants dans le DOM');
         return;
     }
-    function validatePhone(value) {
-        const phoneNumber = value.replace(/\s/g, '');
-        if (!phoneNumber.startsWith('+221')) {
-            showError('Le numéro doit commencer par +221');
+
+    // Populate country select
+    populateCountrySelect();
+
+    function populateCountrySelect() {
+        countrySelect.innerHTML = countries.map(country => 
+            `<option value="${country.code}" ${country.code === 'SN' ? 'selected' : ''}>
+                ${country.flag} ${country.name} (${country.dialCode})
+            </option>`
+        ).join('');
+        
+        // Set initial phone value
+        const selectedCountry = countries.find(c => c.code === countrySelect.value);
+        phoneInput.value = selectedCountry.dialCode;
+    }
+
+    function validatePhone(value, countryCode) {
+        const isValid = validatePhoneNumber(value, countryCode);
+        
+        if (!isValid) {
+            const country = countries.find(c => c.code === countryCode);
+            showError(`Format invalide pour ${country.name}. Format attendu: ${country.dialCode} ${country.format}`);
             return false;
         }
-        const localNumber = phoneNumber.replace(/^\+221/, '');
-        if (localNumber.length === 0) {
-            showError('Le numéro de téléphone est requis');
-            return false;
-        }
-        if (localNumber.length !== 9) {
-            showError('Le numéro doit contenir 9 chiffres après +221');
-            return false;
-        }
-        const prefix = localNumber.substring(0, 2);
-        if (!['77', '78', '75', '70', '76'].includes(prefix)) {
-            showError('Le numéro doit commencer par 77, 78, 75, 70 ou 76');
-            return false;
-        }
+        
         hideError();
         return true;
     }
+
     function showError(message) {
-        const errorDiv = document.getElementById('phone-error');
-        const phoneInput = document.getElementById('phone');
-        
-        errorDiv.textContent = message;
+        phoneError.textContent = message;
         phoneInput.classList.add('border-red-500');
     }
+
     function hideError() {
-        const errorDiv = document.getElementById('phone-error');
-        const phoneInput = document.getElementById('phone');
-        
-        errorDiv.textContent = '';
+        phoneError.textContent = '';
         phoneInput.classList.remove('border-red-500');
     }
 
+    // Country change handler
+    countrySelect.addEventListener('change', (e) => {
+        const selectedCountry = countries.find(c => c.code === e.target.value);
+        phoneInput.value = selectedCountry.dialCode;
+        hideError();
+    });
+
+    // Phone input handler
     phoneInput.addEventListener('input', (e) => {
+        const selectedCountry = countries.find(c => c.code === countrySelect.value);
         let value = e.target.value;
-        value = value.replace(/[^\d+]/g, '');
-        if (!value.startsWith('+')) {
-            value = '+' + value;
-        }
-        if (value.length > 4) { 
-            const countryCode = value.slice(0, 4); 
-            const localNumber = value.slice(4);
-            
-            if (localNumber.length > 0) {
-                const groups = [];
-                let pos = 0;
-                
-                if (localNumber.length > pos) {
-                    groups.push(localNumber.slice(pos, pos + 2));
-                    pos += 2;
-                }
-                if (localNumber.length > pos) {
-                    groups.push(localNumber.slice(pos, pos + 3));
-                    pos += 3;
-                }
-                if (localNumber.length > pos) {
-                    groups.push(localNumber.slice(pos, pos + 2));
-                    pos += 2;
-                }
-                if (localNumber.length > pos) {
-                    groups.push(localNumber.slice(pos, pos + 2));
-                }
-                
-                value = `${countryCode} ${groups.join(' ')}`.trim();
-            } else {
-                value = countryCode;
-            }
+        
+        // Ensure it starts with the correct dial code
+        if (!value.startsWith(selectedCountry.dialCode)) {
+            value = selectedCountry.dialCode;
         }
         
-        e.target.value = value;
-        validatePhone(value.replace(/\s/g, ''));
+        // Format the number
+        const formatted = formatPhoneNumber(value, selectedCountry.code);
+        e.target.value = formatted;
+        
+        // Validate
+        validatePhone(formatted, selectedCountry.code);
     });
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const phoneNumber = phoneInput.value.replace(/\s/g, '');
+        const selectedCountry = countries.find(c => c.code === countrySelect.value);
+        const phoneNumber = phoneInput.value;
         
-        if (!validatePhone(phoneNumber)) {
+        if (!validatePhone(phoneNumber, selectedCountry.code)) {
             return;
         }
         
         try {
-            if (loadingOverlay) loadingOverlay.classList.remove('hidden');
-            if (submitBtn) submitBtn.disabled = true;
+            loadingOverlay.classList.remove('hidden');
+            submitBtn.disabled = true;
             
-            const localNumber = phoneNumber.replace(/^\+221/, '');
+            // Extract local number
+            const localNumber = phoneNumber.replace(selectedCountry.dialCode, '').replace(/\s/g, '');
             
             await new Promise(resolve => setTimeout(resolve, 1500));
-            login(localNumber);
+            login(localNumber, selectedCountry.code);
             window.location.replace('./index.html');
             
         } catch (error) {
             showError('Une erreur est survenue lors de la connexion');
         } finally {
-            if (loadingOverlay) loadingOverlay.classList.add('hidden');
-            if (submitBtn) submitBtn.disabled = false;
+            loadingOverlay.classList.add('hidden');
+            submitBtn.disabled = false;
         }
     });
 });

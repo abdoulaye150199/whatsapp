@@ -1,22 +1,23 @@
 import { getAllContacts, addNewContact, searchContacts } from '../models/chatModel.js';
 import { renderAddContactModal } from './addContactModalView.js';
+import { renderCreateGroupModal } from './createGroupModalView.js';
 import { generateInitialsAvatar } from '../utils/avatarGenerator.js';
 
 async function renderContacts(contacts, onContactSelect) {
   const contactsList = document.getElementById('contacts-list');
   if (!contactsList) return;
 
-  // Make sure contacts is an array
   const contactsArray = Array.isArray(contacts) ? contacts : [];
 
   contactsList.innerHTML = contactsArray.map(contact => {
-    const avatar = generateInitialsAvatar(contact.name);
+    const avatarData = contact.avatar ? 
+      { dataUrl: contact.avatar, initials: '', backgroundColor: '' } : 
+      generateInitialsAvatar(contact.name);
     
     return `
       <div class="contact-item flex items-center p-3 hover:bg-[#202c33] cursor-pointer" data-contact-id="${contact.id}">
-        <div class="w-12 h-12 rounded-full mr-4 overflow-hidden flex items-center justify-center text-white text-xl font-medium"
-             style="background-color: ${avatar.backgroundColor}">
-          ${avatar.initials}
+        <div class="w-12 h-12 rounded-full mr-4 overflow-hidden">
+          <img src="${avatarData.dataUrl}" alt="${contact.name}" class="w-full h-full object-cover">
         </div>
         <div>
           <h3 class="text-white contact-name">${contact.name}</h3>
@@ -41,24 +42,21 @@ async function renderContacts(contacts, onContactSelect) {
 }
 
 export async function renderNewDiscussionView(onContactSelect) {
-  // Vérifier si un conteneur existe déjà
   const existingContainer = document.getElementById('new-discussion-container');
   if (existingContainer) {
     return;
   }
 
-  // Masquer la liste des chats comme pour les paramètres
   const chatList = document.getElementById('chat-list-container');
   chatList.style.display = 'none';
   
-  // Créer le conteneur avec la même largeur que la liste des chats
   const container = document.createElement('div');
   container.id = 'new-discussion-container';
   container.className = 'w-[380px] border-r border-gray-700 flex flex-col bg-[#111b21]';
   
-  // En-tête
+  // Header
   const header = document.createElement('div');
-  header.className = 'p-4 bg-[#202c33] flex items-center justify-between border-b border-gray-700'; // Ajout de justify-between
+  header.className = 'p-4 bg-[#202c33] flex items-center justify-between border-b border-gray-700';
   header.innerHTML = `
     <div class="flex items-center">
       <button id="new-discussion-back-btn" class="text-gray-400 hover:text-white mr-4">
@@ -78,7 +76,7 @@ export async function renderNewDiscussionView(onContactSelect) {
     </button>
   `;
   
-  // Barre de recherche
+  // Search bar
   const searchContainer = document.createElement('div');
   searchContainer.className = 'p-4 bg-[#111b21]';
   searchContainer.innerHTML = `
@@ -95,11 +93,11 @@ export async function renderNewDiscussionView(onContactSelect) {
     </div>
   `;
   
-  // Ajouter les options de groupe et communauté après la barre de recherche
+  // Options (Group and Community)
   const optionsContainer = document.createElement('div');
   optionsContainer.className = 'border-b border-gray-700';
   optionsContainer.innerHTML = `
-    <div class="cursor-pointer hover:bg-[#202c33] p-3 flex items-center">
+    <div id="new-group-btn" class="cursor-pointer hover:bg-[#202c33] p-3 flex items-center transition-colors">
       <div class="w-12 h-12 rounded-full bg-[#00a884] flex items-center justify-center mr-4">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -111,7 +109,7 @@ export async function renderNewDiscussionView(onContactSelect) {
       <span class="text-white">Nouveau groupe</span>
     </div>
 
-    <div class="cursor-pointer hover:bg-[#202c33] p-3 flex items-center">
+    <div id="new-community-btn" class="cursor-pointer hover:bg-[#202c33] p-3 flex items-center transition-colors">
       <div class="w-12 h-12 rounded-full bg-[#00a884] flex items-center justify-center mr-4">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path>
@@ -121,45 +119,37 @@ export async function renderNewDiscussionView(onContactSelect) {
     </div>
   `;
 
-  // Ajout des gestionnaires d'événements pour les nouvelles options
-  const [newGroupBtn, newCommunityBtn] = optionsContainer.children;
-  
-  newGroupBtn.addEventListener('click', () => {
-    handleNewGroup();
-  });
-
-  newCommunityBtn.addEventListener('click', () => {
-    handleNewCommunity();
-  });
-
-  // Liste des contacts
+  // Contacts list
   const contactsList = document.createElement('div');
   contactsList.id = 'contacts-list';
   contactsList.className = 'flex-1 overflow-y-auto';
   
-  // Assembler la vue
+  // Assemble the view
   container.appendChild(header);
   container.appendChild(searchContainer);
   container.appendChild(optionsContainer);
   container.appendChild(contactsList);
   
-  // Ajouter à la page au même endroit que les paramètres
+  // Add to DOM
   chatList.parentNode.insertBefore(container, chatList);
   
-  // Ajouter l'événement de retour sur le bouton
+  // Event listeners
   const backButton = container.querySelector('#new-discussion-back-btn');
   backButton.addEventListener('click', hideNewDiscussionView);
   
-  // Ajouter l'événement pour le bouton d'ajout de contact
   const addContactBtn = container.querySelector('#add-contact-btn');
-  addContactBtn.addEventListener('click', () => {
-    handleAddContact();
-  });
+  addContactBtn.addEventListener('click', handleAddContact);
 
-  // Initialiser les événements
+  const newGroupBtn = container.querySelector('#new-group-btn');
+  newGroupBtn.addEventListener('click', handleNewGroup);
+
+  const newCommunityBtn = container.querySelector('#new-community-btn');
+  newCommunityBtn.addEventListener('click', handleNewCommunity);
+
+  // Initialize events
   initNewDiscussionEvents(onContactSelect);
   
-  // Await the contacts result
+  // Load and render contacts
   const contacts = await getAllContacts();
   renderContacts(contacts, onContactSelect);
 }
@@ -169,33 +159,25 @@ export function hideNewDiscussionView() {
   if (container) {
     container.remove();
   }
-  // Réafficher la liste des chats
   const chatList = document.getElementById('chat-list-container');
   if (chatList) {
     chatList.style.display = 'flex';
   }
 }
 
-// Modifier la fonction handleAddContact
 function handleAddContact() {
   renderAddContactModal();
 }
 
-// Ajouter cette fonction pour rafraîchir la liste
-async function refreshContactsList(onContactSelect) {
-  const contacts = await getAllContacts();
-  renderContacts(contacts, onContactSelect);
-}
-
-// Ajouter ces nouvelles fonctions
-function handleNewGroup() {
+async function handleNewGroup() {
   console.log('Création d\'un nouveau groupe');
-  // Implémenter la logique de création de groupe ici
+  await renderCreateGroupModal();
 }
 
 function handleNewCommunity() {
   console.log('Création d\'une nouvelle communauté');
-  // Implémenter la logique de création de communauté ici
+  // TODO: Implement community creation
+  showNotification('Fonctionnalité en cours de développement', 'info');
 }
 
 async function initNewDiscussionEvents(onContactSelect) {
@@ -209,6 +191,20 @@ async function initNewDiscussionEvents(onContactSelect) {
   }
 }
 
-// Les autres fonctions restent inchangées...
+function showNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `fixed bottom-4 right-4 p-4 rounded-lg ${
+    type === 'success' ? 'bg-green-500' : 
+    type === 'error' ? 'bg-red-500' : 
+    'bg-blue-500'
+  } text-white shadow-lg z-50 notification`;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
 
 export { renderContacts };

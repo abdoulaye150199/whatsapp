@@ -8,8 +8,8 @@ import {
   StickerIcon,
   EventIcon 
 } from '../utils/icons.js';
+import { handleFileUpload, formatFileSize } from './chatView2.js';
 
-// Définir les items du modal d'attachement
 const attachmentItems = [
   { 
     icon: DocumentIcon,
@@ -62,45 +62,25 @@ const attachmentItems = [
 ];
 
 export function renderAttachmentModal(position) {
-  // Fermer le modal existant s'il y en a un
   const existingModal = document.getElementById('attachment-modal');
   if (existingModal) {
     existingModal.remove();
   }
 
-  // Créer le nouveau modal
   const modal = document.createElement('div');
   modal.id = 'attachment-modal';
   modal.className = 'fixed bg-[#233138] rounded-lg shadow-lg z-50 p-1 grid grid-cols-1 gap-1 w-64';
   
-  console.log('Modal element created:', modal);
-
-  // Calculer la position
   const bottomSpace = window.innerHeight - position.y;
   const modalHeight = attachmentItems.length * 60 + 20;
-  
-  console.log('Position calculations:', {
-    bottomSpace,
-    modalHeight,
-    windowHeight: window.innerHeight,
-    positionY: position.y,
-    positionX: position.x
-  });
 
   if (bottomSpace < modalHeight) {
     modal.style.bottom = `${window.innerHeight - position.y + 10}px`;
-    console.log('Positioning modal at bottom:', modal.style.bottom);
   } else {
     modal.style.top = `${position.y}px`;
-    console.log('Positioning modal at top:', modal.style.top);
   }
   
   modal.style.left = `${position.x}px`;
-  console.log('Final modal position:', {
-    top: modal.style.top,
-    bottom: modal.style.bottom,
-    left: modal.style.left
-  });
 
   modal.innerHTML = attachmentItems.map(item => `
     <div class="attachment-item flex items-center gap-3 p-2 hover:bg-[#182229] rounded-lg cursor-pointer transition-colors"
@@ -115,9 +95,7 @@ export function renderAttachmentModal(position) {
   `).join('');
 
   document.body.appendChild(modal);
-  console.log('Modal appended to document body');
 
-  // Ajouter les gestionnaires d'événements pour chaque item
   modal.querySelectorAll('.attachment-item').forEach(item => {
     item.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -127,7 +105,6 @@ export function renderAttachmentModal(position) {
     });
   });
 
-  // Gestionnaire d'événements pour fermer le modal
   setTimeout(() => {
     document.addEventListener('click', closeOnClickOutside);
   }, 100);
@@ -138,7 +115,7 @@ function handleAttachmentAction(action) {
   
   switch(action) {
     case 'document':
-      openFileSelector(['application/pdf', '.doc', '.docx', '.txt', '.rtf']);
+      openFileSelector(['application/pdf', '.doc', '.docx', '.txt', '.rtf', '.xls', '.xlsx', '.ppt', '.pptx']);
       break;
     case 'media':
       openFileSelector(['image/*', 'video/*']);
@@ -186,57 +163,85 @@ function handleFileSelection(files) {
   console.log('Fichiers sélectionnés:', files);
   
   files.forEach(file => {
-    const fileInfo = {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      lastModified: file.lastModified
-    };
-    
-    // Créer un aperçu du fichier
-    createFilePreview(file, fileInfo);
+    createFilePreview(file);
   });
 }
 
-function createFilePreview(file, fileInfo) {
+function createFilePreview(file) {
   const previewModal = document.createElement('div');
   previewModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  previewModal.id = 'file-preview-modal';
   
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
+  const isAudio = file.type.startsWith('audio/');
+  
+  let previewContent = '';
+  
+  if (isImage) {
+    previewContent = `<img src="${URL.createObjectURL(file)}" alt="${file.name}" class="max-w-full max-h-64 object-contain rounded">`;
+  } else if (isVideo) {
+    previewContent = `<video src="${URL.createObjectURL(file)}" controls class="max-w-full max-h-64 rounded"></video>`;
+  } else if (isAudio) {
+    previewContent = `
+      <div class="w-full bg-gray-100 rounded-lg p-4 flex items-center justify-center">
+        <div class="text-center">
+          <svg class="w-16 h-16 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-2v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"></path>
+          </svg>
+          <p class="text-sm text-gray-600">${file.name}</p>
+          <audio src="${URL.createObjectURL(file)}" controls class="mt-2"></audio>
+        </div>
+      </div>
+    `;
+  } else {
+    previewContent = `
+      <div class="w-full bg-gray-100 rounded-lg p-8 flex items-center justify-center">
+        <div class="text-center">
+          <svg class="w-16 h-16 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <p class="text-sm text-gray-600">${file.name}</p>
+        </div>
+      </div>
+    `;
+  }
   
   previewModal.innerHTML = `
-    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">Aperçu du fichier</h3>
+        <h3 class="text-lg font-semibold text-gray-800">Aperçu du fichier</h3>
         <button id="closePreview" class="text-gray-500 hover:text-gray-700">
-          <i class='bx bx-x text-2xl'></i>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
       </div>
       
       <div class="mb-4">
-        ${isImage ? `<img src="${URL.createObjectURL(file)}" alt="${file.name}" class="w-full h-48 object-cover rounded">` : 
-          isVideo ? `<video src="${URL.createObjectURL(file)}" controls class="w-full h-48 rounded"></video>` :
-          `<div class="w-full h-48 bg-gray-100 rounded flex items-center justify-center">
-            <div class="text-center">
-              <i class='bx bx-file text-4xl text-gray-400 mb-2'></i>
-              <p class="text-sm text-gray-600">${file.name}</p>
-            </div>
-          </div>`
-        }
+        ${previewContent}
       </div>
       
-      <div class="text-sm text-gray-600 mb-4">
-        <p><strong>Nom:</strong> ${fileInfo.name}</p>
-        <p><strong>Taille:</strong> ${formatFileSize(fileInfo.size)}</p>
-        <p><strong>Type:</strong> ${fileInfo.type || 'Inconnu'}</p>
+      <div class="text-sm text-gray-600 mb-4 space-y-1">
+        <p><strong>Nom:</strong> ${file.name}</p>
+        <p><strong>Taille:</strong> ${formatFileSize(file.size)}</p>
+        <p><strong>Type:</strong> ${file.type || 'Inconnu'}</p>
+      </div>
+      
+      <div class="mb-4">
+        <textarea 
+          id="file-caption" 
+          placeholder="Ajouter une légende (optionnel)"
+          class="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:border-green-500"
+          rows="3"
+        ></textarea>
       </div>
       
       <div class="flex gap-3 justify-end">
-        <button id="cancelFile" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+        <button id="cancelFile" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
           Annuler
         </button>
-        <button id="sendFile" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+        <button id="sendFile" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
           Envoyer
         </button>
       </div>
@@ -245,68 +250,216 @@ function createFilePreview(file, fileInfo) {
   
   document.body.appendChild(previewModal);
   
-  // Gestionnaires d'événements
+  // Event listeners
   document.getElementById('closePreview').onclick = () => {
+    URL.revokeObjectURL(URL.createObjectURL(file));
     document.body.removeChild(previewModal);
   };
   
   document.getElementById('cancelFile').onclick = () => {
+    URL.revokeObjectURL(URL.createObjectURL(file));
     document.body.removeChild(previewModal);
   };
   
   document.getElementById('sendFile').onclick = () => {
-    sendFileMessage(file, fileInfo);
+    const caption = document.getElementById('file-caption').value.trim();
+    sendFileMessage(file, caption);
+    URL.revokeObjectURL(URL.createObjectURL(file));
     document.body.removeChild(previewModal);
   };
+
+  // Close on outside click
+  previewModal.addEventListener('click', (e) => {
+    if (e.target === previewModal) {
+      URL.revokeObjectURL(URL.createObjectURL(file));
+      document.body.removeChild(previewModal);
+    }
+  });
 }
 
-function sendFileMessage(file, fileInfo) {
-  // Ici vous pouvez implémenter l'envoi du fichier
-  console.log('Envoi du fichier:', fileInfo);
+function sendFileMessage(file, caption = '') {
+  console.log('Envoi du fichier:', file.name, 'avec légende:', caption);
   
-  // Simuler l'envoi d'un message avec le fichier
-  const messageContent = `📎 ${fileInfo.name} (${formatFileSize(fileInfo.size)})`;
-  
-  // Vous pouvez intégrer ceci avec votre MessageManager
-  if (window.MessageManager) {
-    // Ajouter le message avec le fichier
-    // MessageManager.sendMessage(messageContent, 'file', fileInfo);
+  // Get the active chat ID (you'll need to implement this)
+  const activeChatId = getActiveChatId();
+  if (!activeChatId) {
+    console.error('Aucun chat actif');
+    return;
   }
+
+  // Create file message
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const messageData = {
+      id: Date.now(),
+      chatId: activeChatId,
+      text: caption || file.name,
+      timestamp: new Date().toLocaleTimeString('fr-FR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      isMe: true,
+      isFile: true,
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      fileData: e.target.result
+    };
+
+    // Add specific properties based on file type
+    if (file.type.startsWith('image/')) {
+      messageData.isImage = true;
+      messageData.imageData = e.target.result;
+    } else if (file.type.startsWith('video/')) {
+      messageData.isVideo = true;
+      messageData.videoData = e.target.result;
+    } else if (file.type.startsWith('audio/')) {
+      messageData.isAudio = true;
+      messageData.audioData = e.target.result;
+    }
+
+    // Send the message (you'll need to implement this)
+    sendMessage(messageData);
+  };
   
-  console.log('Fichier envoyé:', messageContent);
+  reader.readAsDataURL(file);
 }
 
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+function getActiveChatId() {
+  // This should return the currently active chat ID
+  // You'll need to implement this based on your app structure
+  return window.activeChatId || null;
+}
+
+function sendMessage(messageData) {
+  // This should send the message using your existing message system
+  // You'll need to integrate this with your chatController
+  console.log('Sending message:', messageData);
+  
+  // Example integration:
+  if (window.chatController && window.chatController.sendMessage) {
+    window.chatController.sendMessage(messageData);
+  }
 }
 
 function openCamera() {
   console.log('Ouverture de la caméra...');
-  // Implémenter l'accès à la caméra
+  
+  // Create camera modal
+  const cameraModal = document.createElement('div');
+  cameraModal.className = 'fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50';
+  cameraModal.id = 'camera-modal';
+  
+  cameraModal.innerHTML = `
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold">Caméra</h3>
+        <button id="closeCameraModal" class="text-gray-500 hover:text-gray-700">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="mb-4">
+        <video id="cameraVideo" class="w-full h-64 bg-gray-200 rounded" autoplay></video>
+        <canvas id="cameraCanvas" class="hidden"></canvas>
+      </div>
+      
+      <div class="flex gap-3 justify-center">
+        <button id="takePicture" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+          Prendre une photo
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(cameraModal);
+  
+  // Initialize camera
+  initCamera();
+}
+
+async function initCamera() {
+  const video = document.getElementById('cameraVideo');
+  const canvas = document.getElementById('cameraCanvas');
+  const takePictureBtn = document.getElementById('takePicture');
+  const closeCameraBtn = document.getElementById('closeCameraModal');
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    
+    takePictureBtn.addEventListener('click', () => {
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      // Draw video frame to canvas
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      
+      // Convert to blob
+      canvas.toBlob((blob) => {
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        // Stop camera stream
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Close camera modal
+        document.body.removeChild(document.getElementById('camera-modal'));
+        
+        // Show file preview
+        createFilePreview(file);
+      }, 'image/jpeg', 0.9);
+    });
+    
+    closeCameraBtn.addEventListener('click', () => {
+      stream.getTracks().forEach(track => track.stop());
+      document.body.removeChild(document.getElementById('camera-modal'));
+    });
+    
+  } catch (error) {
+    console.error('Erreur d\'accès à la caméra:', error);
+    alert('Impossible d\'accéder à la caméra. Vérifiez les permissions.');
+    document.body.removeChild(document.getElementById('camera-modal'));
+  }
 }
 
 function showContactSelector() {
   console.log('Sélecteur de contact...');
-  // Implémenter le sélecteur de contact
+  showNotification('Fonctionnalité en cours de développement', 'info');
 }
 
 function showPollCreator() {
   console.log('Créateur de sondage...');
-  // Implémenter le créateur de sondage
+  showNotification('Fonctionnalité en cours de développement', 'info');
 }
 
 function showStickerSelector() {
   console.log('Sélecteur de stickers...');
-  // Implémenter le sélecteur de stickers
+  showNotification('Fonctionnalité en cours de développement', 'info');
 }
 
 function showEventCreator() {
   console.log('Créateur d\'événement...');
-  // Implémenter le créateur d'événement
+  showNotification('Fonctionnalité en cours de développement', 'info');
+}
+
+function showNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `fixed bottom-4 right-4 p-4 rounded-lg ${
+    type === 'success' ? 'bg-green-500' : 
+    type === 'error' ? 'bg-red-500' : 
+    'bg-blue-500'
+  } text-white shadow-lg z-50 notification`;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
 }
 
 function closeOnClickOutside(e) {
@@ -329,9 +482,7 @@ export function hideAttachmentModal() {
   }
 }
 
-// Ajouter cette fonction auxiliaire dans le même fichier
 function getColorFromBgClass(bgClass) {
-  // Extraire la couleur hex du bg-[#xxxxx]
   const colorMatch = bgClass.match(/#[0-9A-Fa-f]{6}/);
   return colorMatch ? colorMatch[0] : '#ffffff';
 }

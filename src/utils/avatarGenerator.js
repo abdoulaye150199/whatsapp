@@ -13,33 +13,59 @@ function generateInitialsAvatar(name, size = 120) {
     '#ffa726', // orange clair
     '#8d6e63', // marron
     '#26a69a', // turquoise
+    '#f44336', // rouge
+    '#9c27b0', // violet foncé
+    '#3f51b5', // indigo
+    '#2196f3', // bleu clair
+    '#00bcd4', // cyan
+    '#009688', // teal
+    '#4caf50', // vert clair
+    '#8bc34a', // vert lime
+    '#cddc39', // lime
+    '#ffeb3b', // jaune
+    '#ff9800', // orange
+    '#ff5722', // rouge orange
+    '#795548', // marron
+    '#607d8b'  // bleu gris
   ];
   
-  // Pick random color
+  // Pick color based on name hash
   const colorIndex = Math.abs(name.split('').reduce((acc, char) => {
     return acc + char.charCodeAt(0);
   }, 0)) % colors.length;
   const bgColor = colors[colorIndex];
   
-  // Draw background
+  // Draw background circle
   ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, size, size);
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size/2, 0, 2 * Math.PI);
+  ctx.fill();
   
-  // Draw text
+  // Get initials
   const initials = name
     .split(' ')
-    .map(word => word[0])
+    .map(word => word.charAt(0))
     .join('')
     .toUpperCase()
     .slice(0, 2);
   
+  // Draw text
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = `${size/2}px Arial`;
+  ctx.font = `bold ${size/2.5}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(initials, size/2, size/2);
   
-  return canvas.toDataURL('image/png');
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    backgroundColor: bgColor,
+    initials: initials
+  };
 }
 
-export { generateInitialsAvatar };
+// Version simplifiée qui retourne juste l'URL
+function generateInitialsAvatarUrl(name, size = 120) {
+  return generateInitialsAvatar(name, size).dataUrl;
+}
+
+export { generateInitialsAvatar, generateInitialsAvatarUrl };

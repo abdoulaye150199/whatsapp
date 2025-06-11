@@ -1,5 +1,5 @@
 import { addNewContact, getAllContacts } from '../models/chatModel.js';
-import { formatPhoneNumber } from '../utils/phoneFormatter.js';
+import { countries, formatPhoneNumber, validatePhoneNumber } from '../utils/countryData.js';
 import { generateInitialsAvatar } from '../utils/avatarGenerator.js';
 import { renderContacts } from './newDiscussionView.js';
 
@@ -23,14 +23,21 @@ export function renderAddContactModal() {
         <div class="mb-4">
           <input type="text" id="contact-name" 
             placeholder="Nom du contact" required
-            class="w-full p-2 bg-[#2a3942] text-white rounded-lg outline-none border border-gray-700 focus:border-[#00a884]">
+            class="w-full p-3 bg-[#2a3942] text-white rounded-lg outline-none border border-gray-700 focus:border-[#00a884]">
+          <div id="contact-name-error" class="text-red-500 text-sm mt-2"></div>
+        </div>
+        
+        <div class="mb-4">
+          <select id="contact-country" class="w-full p-3 bg-[#2a3942] text-white rounded-lg outline-none border border-gray-700 focus:border-[#00a884] mb-2">
+            <!-- Countries will be populated here -->
+          </select>
         </div>
         
         <div class="mb-4">
           <input type="tel" id="contact-phone" 
             placeholder="Numéro de téléphone" required
-            value="+221"
-            class="w-full p-2 bg-[#2a3942] text-white rounded-lg outline-none border border-gray-700 focus:border-[#00a884]">
+            class="w-full p-3 bg-[#2a3942] text-white rounded-lg outline-none border border-gray-700 focus:border-[#00a884]">
+          <div id="contact-phone-error" class="text-red-500 text-sm mt-2"></div>
         </div>
 
         <div class="flex justify-end gap-2">
@@ -52,15 +59,106 @@ export function renderAddContactModal() {
   const form = modal.querySelector('#add-contact-form');
   const closeBtn = modal.querySelector('#close-modal');
   const cancelBtn = modal.querySelector('#cancel-contact');
+  const countrySelect = modal.querySelector('#contact-country');
+  const phoneInput = modal.querySelector('#contact-phone');
+  const nameInput = modal.querySelector('#contact-name');
 
+  // Populate countries
+  populateCountries();
+
+  function populateCountries() {
+    countrySelect.innerHTML = countries.map(country => 
+      `<option value="${country.code}" ${country.code === 'SN' ? 'selected' : ''}>
+        ${country.flag} ${country.name} (${country.dialCode})
+      </option>`
+    ).join('');
+    
+    // Set initial phone value
+    const selectedCountry = countries.find(c => c.code === countrySelect.value);
+    phoneInput.value = selectedCountry.dialCode + ' ';
+  }
+
+  // Event listeners
   closeBtn.addEventListener('click', hideAddContactModal);
   cancelBtn.addEventListener('click', hideAddContactModal);
+  
+  countrySelect.addEventListener('change', (e) => {
+    const selectedCountry = countries.find(c => c.code === e.target.value);
+    phoneInput.value = selectedCountry.dialCode + ' ';
+    hideError('contact-phone-error');
+  });
+
+  phoneInput.addEventListener('input', (e) => {
+    const selectedCountry = countries.find(c => c.code === countrySelect.value);
+    let value = e.target.value;
+    
+    // Ensure it starts with the correct dial code
+    if (!value.startsWith(selectedCountry.dialCode)) {
+      value = selectedCountry.dialCode + ' ';
+    }
+    
+    // Format the number
+    const formatted = formatPhoneNumber(value, selectedCountry.code);
+    e.target.value = formatted;
+    
+    // Validate
+    validatePhone(formatted, selectedCountry.code);
+  });
+
+  nameInput.addEventListener('input', (e) => {
+    validateName(e.target.value);
+  });
+
   form.addEventListener('submit', handleAddContactSubmit);
 
-  // Fermer en cliquant en dehors du modal
+  // Close on outside click
   modal.addEventListener('click', (e) => {
     if (e.target === modal) hideAddContactModal();
   });
+
+  function validateName(value) {
+    if (!value.trim()) {
+      showError('contact-name-error', 'Le nom est requis');
+      return false;
+    }
+    if (value.trim().length < 2) {
+      showError('contact-name-error', 'Le nom doit contenir au moins 2 caractères');
+      return false;
+    }
+    hideError('contact-name-error');
+    return true;
+  }
+
+  function validatePhone(value, countryCode) {
+    const isValid = validatePhoneNumber(value, countryCode);
+    
+    if (!isValid) {
+      const country = countries.find(c => c.code === countryCode);
+      showError('contact-phone-error', `Format invalide pour ${country.name}`);
+      return false;
+    }
+    
+    hideError('contact-phone-error');
+    return true;
+  }
+
+  function showError(errorId, message) {
+    const errorDiv = document.getElementById(errorId);
+    const inputId = errorId.replace('-error', '');
+    const inputElement = document.getElementById(inputId);
+    
+    if (errorDiv) errorDiv.textContent = message;
+    if (inputElement) inputElement.classList.add('border-red-500');
+  }
+
+  function hideError(errorId) {
+    const errorDiv = document.getElementById(errorId);
+    const inputId = errorId.replace('-error', '');
+    const inputElement = document.getElementById(inputId);
+    
+    if (errorDiv) errorDiv.textContent = '';
+    if (inputElement) inputElement.classList.remove('border-red-500');
+  }
 }
 
 function hideAddContactModal() {
@@ -73,13 +171,18 @@ async function handleAddContactSubmit(e) {
   
   const nameInput = document.getElementById('contact-name');
   const phoneInput = document.getElementById('contact-phone');
+  const countrySelect = document.getElementById('contact-country');
   const submitButton = e.target.querySelector('button[type="submit"]');
 
   const name = nameInput.value.trim();
   const phone = phoneInput.value.trim();
+  const selectedCountry = countries.find(c => c.code === countrySelect.value);
 
-  if (!name || !phone) {
-    showNotification('Veuillez remplir tous les champs', 'error');
+  // Validate
+  const isNameValid = validateName(name);
+  const isPhoneValid = validatePhone(phone, selectedCountry.code);
+
+  if (!isNameValid || !isPhoneValid) {
     return;
   }
 
@@ -88,20 +191,22 @@ async function handleAddContactSubmit(e) {
   submitButton.textContent = 'Ajout en cours...';
 
   try {
-    const formattedPhone = formatPhoneNumber(phone);
+    // Generate avatar
+    const avatarData = generateInitialsAvatar(name);
     
-    // Créer le nouveau contact avec ID unique
+    // Create the new contact
     const newContact = {
       id: Date.now(),
       name: name,
-      phone: formattedPhone,
+      phone: phone,
       status: "Hey! J'utilise WhatsApp",
-      online: false
+      online: false,
+      avatar: avatarData.dataUrl
     };
 
     await addNewContact(newContact);
     
-    // Actualiser la liste des contacts si elle est visible
+    // Refresh contacts list if visible
     const contactsList = document.getElementById('contacts-list');
     if (contactsList) {
       const contacts = await getAllContacts();
@@ -111,19 +216,9 @@ async function handleAddContactSubmit(e) {
     hideAddContactModal();
     showNotification('Contact ajouté avec succès!');
     
-    // Reset form
-    nameInput.value = '';
-    phoneInput.value = '+221';
-    
   } catch (error) {
     if (error.message === 'Ce numéro existe déjà') {
-      phoneInput.classList.add('border-red-500');
-      showNotification('Ce numéro de téléphone existe déjà', 'error');
-      
-      // Remove error highlight after 3 seconds
-      setTimeout(() => {
-        phoneInput.classList.remove('border-red-500');
-      }, 3000);
+      showError('contact-phone-error', 'Ce numéro de téléphone existe déjà');
     } else {
       console.error('Erreur lors de l\'ajout du contact:', error);
       showNotification('Une erreur est survenue lors de l\'ajout du contact', 'error');
@@ -133,6 +228,50 @@ async function handleAddContactSubmit(e) {
     submitButton.disabled = false;
     submitButton.textContent = 'Ajouter';
   }
+}
+
+function validateName(value) {
+  if (!value.trim()) {
+    showError('contact-name-error', 'Le nom est requis');
+    return false;
+  }
+  if (value.trim().length < 2) {
+    showError('contact-name-error', 'Le nom doit contenir au moins 2 caractères');
+    return false;
+  }
+  hideError('contact-name-error');
+  return true;
+}
+
+function validatePhone(value, countryCode) {
+  const isValid = validatePhoneNumber(value, countryCode);
+  
+  if (!isValid) {
+    const country = countries.find(c => c.code === countryCode);
+    showError('contact-phone-error', `Format invalide pour ${country.name}`);
+    return false;
+  }
+  
+  hideError('contact-phone-error');
+  return true;
+}
+
+function showError(errorId, message) {
+  const errorDiv = document.getElementById(errorId);
+  const inputId = errorId.replace('-error', '');
+  const inputElement = document.getElementById(inputId);
+  
+  if (errorDiv) errorDiv.textContent = message;
+  if (inputElement) inputElement.classList.add('border-red-500');
+}
+
+function hideError(errorId) {
+  const errorDiv = document.getElementById(errorId);
+  const inputId = errorId.replace('-error', '');
+  const inputElement = document.getElementById(inputId);
+  
+  if (errorDiv) errorDiv.textContent = '';
+  if (inputElement) inputElement.classList.remove('border-red-500');
 }
 
 function showNotification(message, type = 'success') {

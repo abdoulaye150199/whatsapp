@@ -34,7 +34,7 @@
                     <!-- Sélecteur de pays -->
                     <div class="relative">
                         <select id="country" class="w-full p-4 pl-6 border rounded-[25px] appearance-none text-[#41525d] bg-white border-[#e1e9eb] focus:border-[#008069] focus:outline-none">
-                            <option value="SN" selected>🇸🇳 Sénégal</option>
+                            <!-- Countries will be populated by JavaScript -->
                         </select>
                         <div class="absolute right-6 top-1/2 transform -translate-y-1/2 pointer-events-none">
                             <svg class="w-5 h-5 text-[#8696a0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,11 +48,9 @@
                         <input
                             type="tel"
                             id="phone"
-                            value="+221"
                             required
                             class="w-full p-4 pl-6 border rounded-[25px] text-[#41525d] bg-white border-[#e1e9eb] focus:border-[#008069] focus:outline-none"
                         >
-                        <!-- Ajouter cette div pour les messages d'erreur -->
                         <div id="phone-error" class="text-red-500 text-sm mt-2 ml-4"></div>
                     </div>
 
@@ -63,7 +61,7 @@
                             id="submit-btn"
                             class="bg-[#008069] text-white rounded-[24px] py-3 px-8 font-medium hover:bg-[#017561] transition-colors"
                         >
-                            connexion
+                            Connexion
                         </button>
                     </div>
                 </form>
