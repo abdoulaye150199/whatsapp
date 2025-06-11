@@ -107,24 +107,44 @@ export function register(phoneNumber, firstName, lastName, countryCode = 'SN') {
  * @param {string} phoneNumber - Numéro de téléphone de l'utilisateur
  * @param {string} countryCode - Code du pays
  */
-export function login(phoneNumber, countryCode = 'SN') {
-  // Vérifier si l'utilisateur existe dans db.json
-  const contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
-  const phone = phoneNumber.replace(/\D/g, '');
-  const user = contacts.find(c => c.phone.replace(/\D/g, '') === phone);
+const API_URL = 'http://localhost:3000';
 
-  if (!user) {
-    throw new Error('Numéro non enregistré');
+export async function login(phoneNumber, countryCode = 'SN') {
+  try {
+    // Récupérer les contacts depuis l'API
+    const response = await fetch(`${API_URL}/contacts`);
+    if (!response.ok) {
+      throw new Error('Erreur de connexion au serveur');
+    }
+    
+    const contacts = await response.json();
+    
+    // Nettoyer les numéros pour la comparaison
+    const cleanInputPhone = phoneNumber.replace(/\s+/g, '');
+    
+    const user = contacts.find(c => {
+      const cleanContactPhone = c.phone.replace(/\s+/g, '');
+      return cleanContactPhone === cleanInputPhone;
+    });
+
+    if (!user) {
+      throw new Error('Numéro non enregistré');
+    }
+
+    // Stocker les infos utilisateur
+    localStorage.setItem('whatsapp_user', JSON.stringify({
+      id: user.id,
+      phone: phoneNumber, 
+      name: user.name,
+      countryCode: countryCode,
+      lastLogin: new Date().toISOString()
+    }));
+
+    return user;
+  } catch (error) {
+    console.error('Erreur de connexion:', error);
+    throw error;
   }
-
-  // Stocker les infos de l'utilisateur
-  localStorage.setItem('whatsapp_user', JSON.stringify({
-    id: user.id,
-    phone: phoneNumber,
-    name: user.name,
-    countryCode: countryCode,
-    lastLogin: new Date().toISOString()
-  }));
 }
 
 /**

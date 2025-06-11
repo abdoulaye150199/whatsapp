@@ -35,12 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function validatePhone(value, countryCode) {
-        const isValid = validatePhoneNumber(value, countryCode);
+        // Enlever les espaces pour la validation
+        const cleanPhone = value.replace(/\s+/g, '');
         
-        if (!isValid) {
-            const country = countries.find(c => c.code === countryCode);
-            showError(`Format invalide pour ${country.name}. Format attendu: ${country.dialCode} ${country.format}`);
-            return false;
+        // Vérifier le format Sénégal: +221 XX XXX XX XX
+        if (countryCode === 'SN') {
+            const regex = /^\+221(70|75|76|77|78)[0-9]{7}$/;
+            if (!regex.test(cleanPhone)) {
+                showError('Format invalide. Exemple: +221 77 123 45 67');
+                return false;
+            }
         }
         
         hideError();
@@ -96,20 +100,17 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingOverlay.classList.remove('hidden');
             submitBtn.disabled = true;
             
-            // Extract local number
-            const localNumber = phoneNumber.replace(selectedCountry.dialCode, '').replace(/\s/g, '');
+            // Formater le numéro correctement
+            const formattedPhone = formatPhoneNumber(phoneNumber, selectedCountry.code);
             
-            // Avant la connexion, formater le numéro
-            const formattedPhone = `+221${phoneNumber.replace(/\D/g, '')}`;
-            try {
-              login(formattedPhone, selectedCountry.code);
-              window.location.href = 'index.html';
-            } catch (error) {
-              showError(error.message);
-            }
+            // Tenter la connexion
+            await login(formattedPhone, selectedCountry.code);
+            
+            // Rediriger vers l'app si succès
+            window.location.href = 'index.html';
             
         } catch (error) {
-            showError('Une erreur est survenue lors de la connexion');
+            showError(error.message || 'Une erreur est survenue lors de la connexion');
         } finally {
             loadingOverlay.classList.add('hidden');
             submitBtn.disabled = false;
