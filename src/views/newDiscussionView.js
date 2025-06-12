@@ -1,4 +1,4 @@
-import { getAllContacts, addNewContact, searchContacts } from '../models/chatModel.js';
+import { getAllContacts, addNewContact, searchContacts, getAllChats } from '../models/chatModel.js';
 import { renderAddContactModal } from './addContactModalView.js';
 import { renderCreateGroupModal } from './createGroupModalView.js';
 import { generateInitialsAvatar } from '../utils/avatarGenerator.js';
@@ -35,6 +35,55 @@ async function renderContacts(contacts, onContactSelect) {
       const selectedContact = contacts.find(c => c.id === contactId);
       if (selectedContact && onContactSelect) {
         onContactSelect(selectedContact);
+        hideNewDiscussionView();
+      }
+    });
+  });
+}
+
+async function renderGroups(groups, onGroupSelect) {
+  const contactsList = document.getElementById('contacts-list');
+  if (!contactsList) return;
+
+  // Get existing contacts HTML
+  const existingHTML = contactsList.innerHTML;
+  
+  // Add groups section
+  const groupsHTML = groups.length > 0 ? `
+    <div class="border-t border-gray-700 mt-2 pt-2">
+      <div class="px-3 py-2">
+        <h4 class="text-gray-400 text-sm font-medium">GROUPES</h4>
+      </div>
+      ${groups.map(group => {
+        const avatarData = group.avatar ? 
+          { dataUrl: group.avatar } : 
+          generateInitialsAvatar(group.name);
+        
+        return `
+          <div class="group-item flex items-center p-3 hover:bg-[#202c33] cursor-pointer" data-group-id="${group.id}">
+            <div class="w-12 h-12 rounded-full mr-4 overflow-hidden">
+              <img src="${avatarData.dataUrl}" alt="${group.name}" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <h3 class="text-white group-name">${group.name}</h3>
+              <p class="text-gray-400 text-sm">${group.status || `${group.participants ? group.participants.length + 1 : 1} participants`}</p>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  ` : '';
+
+  contactsList.innerHTML = existingHTML + groupsHTML;
+
+  // Add click events for groups
+  const groupItems = contactsList.querySelectorAll('.group-item');
+  groupItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const groupId = parseInt(item.dataset.groupId);
+      const selectedGroup = groups.find(g => g.id === groupId);
+      if (selectedGroup && onGroupSelect) {
+        onGroupSelect(selectedGroup);
         hideNewDiscussionView();
       }
     });
@@ -146,12 +195,31 @@ export async function renderNewDiscussionView(onContactSelect) {
   const newCommunityBtn = container.querySelector('#new-community-btn');
   newCommunityBtn.addEventListener('click', handleNewCommunity);
 
+  // Listen for group creation events
+  document.addEventListener('group-created', async () => {
+    await loadAndRenderData(onContactSelect);
+  });
+
   // Initialize events
   initNewDiscussionEvents(onContactSelect);
   
-  // Load and render contacts
-  const contacts = await getAllContacts();
-  renderContacts(contacts, onContactSelect);
+  // Load and render contacts and groups
+  await loadAndRenderData(onContactSelect);
+}
+
+async function loadAndRenderData(onContactSelect) {
+  try {
+    // Load contacts
+    const contacts = await getAllContacts();
+    await renderContacts(contacts, onContactSelect);
+    
+    // Load and render groups
+    const allChats = await getAllChats();
+    const groups = allChats.filter(chat => chat.isGroup);
+    await renderGroups(groups, onContactSelect);
+  } catch (error) {
+    console.error('Erreur lors du chargement des données:', error);
+  }
 }
 
 export function hideNewDiscussionView() {
@@ -185,8 +253,18 @@ async function initNewDiscussionEvents(onContactSelect) {
   if (searchInput) {
     searchInput.addEventListener('input', async (e) => {
       const query = e.target.value.trim();
+      
+      // Search contacts
       const filteredContacts = await searchContacts(query);
-      renderContacts(filteredContacts, onContactSelect);
+      await renderContacts(filteredContacts, onContactSelect);
+      
+      // Search groups
+      const allChats = await getAllChats();
+      const groups = allChats.filter(chat => 
+        chat.isGroup && 
+        chat.name.toLowerCase().includes(query.toLowerCase())
+      );
+      await renderGroups(groups, onContactSelect);
     });
   }
 }

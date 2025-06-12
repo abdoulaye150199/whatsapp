@@ -154,10 +154,18 @@ export async function login(phoneNumber, countryCode = 'SN') {
 export function getCurrentUser() {
     try {
         const userData = localStorage.getItem('whatsapp_user');
-        return userData ? JSON.parse(userData) : null;
+        return userData ? JSON.parse(userData) : {
+            id: 1,
+            name: 'AbdAllah',
+            phone: '+221 77 123 45 67'
+        };
     } catch (error) {
         console.error('Erreur lors de la récupération de l\'utilisateur:', error);
-        return null;
+        return {
+            id: 1,
+            name: 'AbdAllah',
+            phone: '+221 77 123 45 67'
+        };
     }
 }
 

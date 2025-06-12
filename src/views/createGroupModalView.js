@@ -1,5 +1,6 @@
-import { getAllContacts } from '../models/chatModel.js';
+import { getAllContacts, createNewGroup } from '../models/chatModel.js';
 import { generateInitialsAvatar } from '../utils/avatarGenerator.js';
+import { getCurrentUser } from '../utils/auth.js';
 
 export async function renderCreateGroupModal() {
   const modal = document.createElement('div');
@@ -169,10 +170,10 @@ async function initCreateGroupModal() {
   }
 
   function toggleContactSelection(contactId) {
-    const contact = allContacts.find(c => c.id === contactId);
+    const contact = allContacts.find(c => c.id == contactId);
     if (!contact) return;
 
-    const index = selectedContacts.findIndex(c => c.id === contactId);
+    const index = selectedContacts.findIndex(c => c.id == contactId);
     const checkbox = document.querySelector(`[data-contact-id="${contactId}"] .contact-checkbox`);
     const checkmark = checkbox.querySelector('.checkmark');
 
@@ -254,6 +255,7 @@ async function initCreateGroupModal() {
     const groupName = groupNameInput.value.trim();
     const groupDescription = groupDescInput.value.trim();
     const groupAvatar = avatarContainer.dataset.avatar || generateInitialsAvatar(groupName).dataUrl;
+    const currentUser = getCurrentUser();
 
     if (!groupName || selectedContacts.length === 0) {
       return;
@@ -271,9 +273,9 @@ async function initCreateGroupModal() {
         avatar: groupAvatar,
         isGroup: true,
         participants: selectedContacts,
-        admin: getCurrentUser().id,
+        admin: currentUser ? currentUser.id : 1,
         createdAt: new Date().toISOString(),
-        lastMessage: `Groupe créé par ${getCurrentUser().name}`,
+        lastMessage: `Groupe créé par ${currentUser ? currentUser.name : 'Vous'}`,
         timestamp: new Date().toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
@@ -283,14 +285,17 @@ async function initCreateGroupModal() {
         status: `${selectedContacts.length + 1} participants`
       };
 
-      // Save the group (you'll need to implement this in your chat model)
-      await createNewGroup(newGroup);
+      // Save the group
+      const savedGroup = await createNewGroup(newGroup);
       
-      hideCreateGroupModal();
-      showNotification('Groupe créé avec succès!');
-      
-      // Refresh the chat list
-      window.location.reload();
+      if (savedGroup) {
+        hideCreateGroupModal();
+        showNotification('Groupe créé avec succès!');
+        
+        // Refresh the chat list
+        const event = new CustomEvent('group-created', { detail: savedGroup });
+        document.dispatchEvent(event);
+      }
       
     } catch (error) {
       console.error('Erreur lors de la création du groupe:', error);
@@ -311,23 +316,6 @@ function hideCreateGroupModal() {
   if (window.removeParticipant) {
     delete window.removeParticipant;
   }
-}
-
-function getCurrentUser() {
-  // This should return the current user data
-  return {
-    id: 1,
-    name: 'Vous'
-  };
-}
-
-async function createNewGroup(groupData) {
-  // This should save the group to your data store
-  // For now, we'll just log it
-  console.log('Creating group:', groupData);
-  
-  // You can implement the actual saving logic here
-  // similar to how you save chats in your chatModel
 }
 
 function showNotification(message, type = 'success') {

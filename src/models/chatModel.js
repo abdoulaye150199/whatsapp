@@ -252,7 +252,8 @@ async function createNewChat(contact) {
       avatar: contact.avatar || `https://api.dicebear.com/6.x/initials/svg?seed=${contact.name}`,
       online: false,
       status: contact.status || "Hey! J'utilise WhatsApp",
-      messages: []
+      messages: [],
+      isGroup: contact.isGroup || false
     };
 
     // Sauvegarder en local d'abord
@@ -286,6 +287,61 @@ async function createNewChat(contact) {
     return newChat;
   } catch (error) {
     console.error('Error in createNewChat:', error);
+    return null;
+  }
+}
+
+// Nouvelle fonction pour créer un groupe
+async function createNewGroup(groupData) {
+  try {
+    loadChats();
+    
+    // Créer le groupe avec un ID unique
+    const newGroup = {
+      ...groupData,
+      id: Date.now(),
+      isGroup: true,
+      messages: [],
+      lastMessage: `Groupe créé`,
+      timestamp: new Date().toLocaleTimeString('fr-FR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      unreadCount: 0,
+      online: false
+    };
+
+    // Sauvegarder en local d'abord
+    chats.push(newGroup);
+    saveChats();
+
+    try {
+      // Sauvegarder dans l'API
+      const response = await fetch('http://localhost:3000/chats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newGroup)
+      });
+
+      if (response.ok) {
+        const savedGroup = await response.json();
+        // Mettre à jour le groupe local avec les données de l'API
+        const index = chats.findIndex(c => String(c.id) === String(newGroup.id));
+        if (index !== -1) {
+          chats[index] = savedGroup;
+          saveChats();
+        }
+        return savedGroup;
+      }
+    } catch (apiError) {
+      console.warn('API error, using local data:', apiError);
+    }
+
+    return newGroup;
+  } catch (error) {
+    console.error('Error in createNewGroup:', error);
     return null;
   }
 }
@@ -371,5 +427,6 @@ export {
   searchContacts,
   createNewChat,
   addNewContact,
-  updateLastMessage
+  updateLastMessage,
+  createNewGroup
 };

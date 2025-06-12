@@ -1,17 +1,18 @@
 import { getCurrentUser } from '../models/userModel.js';
 import { initChat } from './chatController.js';
 import { renderSettingsView } from '../views/settingsView.js';
+import { renderStatusView } from '../views/statusView.js';
 import { initMenuController } from './menuController.js';
 import { initChatFilters } from '../views/chatView.js';
+import { initStatusController } from './statusController.js';
 
 function initApp() {
   setCurrentUserAvatar();
   
   initChat();
   initChatFilters();
-
+  initStatusController();
   initMenuController();
-
   initNavigation();
 }
 
@@ -31,13 +32,38 @@ function initNavigation() {
   const communitiesBtn = document.getElementById('communities-btn');
   const settingsBtn = document.getElementById('settings-btn');
 
-  statusBtn.addEventListener('click', () => switchTab('status'));
+  statusBtn.addEventListener('click', () => {
+    switchTab('status');
+    renderStatusView();
+  });
+  
   channelsBtn.addEventListener('click', () => switchTab('channels'));
-  chatsBtn.addEventListener('click', () => switchTab('chats'));
+  
+  chatsBtn.addEventListener('click', () => {
+    switchTab('chats');
+    // Masquer les autres vues et afficher la liste des chats
+    hideAllViews();
+    const chatList = document.getElementById('chat-list-container');
+    if (chatList) {
+      chatList.style.display = 'flex';
+    }
+  });
+  
   communitiesBtn.addEventListener('click', () => switchTab('communities'));
+  
   settingsBtn.addEventListener('click', () => {
     switchTab('settings');
     renderSettingsView();
+  });
+}
+
+function hideAllViews() {
+  const views = ['status-container', 'settings-container', 'new-discussion-container'];
+  views.forEach(viewId => {
+    const view = document.getElementById(viewId);
+    if (view) {
+      view.remove();
+    }
   });
 }
 
